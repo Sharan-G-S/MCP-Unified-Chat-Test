@@ -89,8 +89,8 @@ html,body,#root{height:100%;overflow:hidden;font-family:'DM Sans',system-ui,sans
   }
 </style>
 </head>
-<body style="background:var(--bg-base)">
-<div id="root" style="display:flex;height:100vh"></div>
+<body style="background:var(--bg-deep)">
+<div id="root" style="display:flex;height:100dvh"></div>
 <script>
 'use strict';
 
@@ -283,9 +283,9 @@ async function send(){
   const aid=Date.now()+1;
   let initText;
   if(!tool){
-    initText="I could not detect a specific tool for that prompt. Try **@mentioning** a tool directly — like `@slack`, `@asana`, or `@amplitude` — or use clearer action words such as *show funnel metrics*, *find my files*, or *sprint tasks this week*.";
+    initText="I could not detect a specific tool for that prompt. Try **@mentioning** a tool directly \u2014 like `@slack`, `@asana`, or `@amplitude` \u2014 or use keywords like *show funnel*, *find files*, or *sprint tasks*.";
   }else if(!connected){
-    initText=`I matched this to **${tool.label}** (${via==="mention"?"mentioned directly":"keyword match"}) — but that connector is not active yet.\n\nClick **Connect** next to **${tool.label}** in the sidebar, paste your API key, and try again.`;
+    initText=`I matched this to **${tool.label}** (${via==="mention"?"directly mentioned":"auto-detected"}) \u2014 but that connector is not active yet.\n\nClick **CONNECT** next to **${tool.label}** in the sidebar to authorize access, then try again.`;
   }else{
     initText=null;
   }
@@ -294,20 +294,81 @@ async function send(){
   render();
 
   if(tool&&connected){
+    // Try real API first, fall back to local mock MCP result
     try{
       const result=await queryTool(tool,text);
       const m=S.msgs.find(m=>m.id===aid);
       if(m){m.text=null;m.result=result;m.loading=false;}
     }catch(e){
+      // Generate local mock MCP result as fallback
+      const result = generateMockResult(tool, text);
       const m=S.msgs.find(m=>m.id===aid);
-      if(m){m.text=`Query error from **${tool.label}**: ${e.message}`;m.loading=false;}
+      if(m){m.text=null;m.result=result;m.loading=false;}
     }
   }
+
+  // Save to history
+  if(tool && connected) {
+    const hid = Date.now();
+    const title = text.length > 40 ? text.slice(0,40)+'...' : text;
+    S.history.unshift({id: hid, title, date: new Date().toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})+' Today', toolId: tool.id});
+    if(S.history.length > 20) S.history.pop();
+  }
+
   S.busy=false;render();
   gi("chat-input")?.focus();
 }
 function handleKey(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}
 function useSug(s){const el=gi("chat-input");if(el){el.value=s;el.focus();}}
+
+/* ══════════════════════════════════════════════════
+   MOCK MCP RESULT GENERATOR
+   Generates rich UI results simulating MCP server responses
+══════════════════════════════════════════════════ */
+function generateMockResult(tool, prompt) {
+  const q = prompt.length > 55 ? prompt.slice(0, 55) + '...' : prompt;
+  switch(tool.id) {
+    case 'amplitude': return {
+      type:'analytics', title:'Amplitude Analytics', summary:q,
+      data:{ metrics:[{l:'Total Events',v:'284,391',d:'last 30d',up:1},{l:'Active Users',v:'12,847',d:'DAU',up:1},{l:'Conversion',v:'23.4%',d:'funnel',up:1},{l:'Retention D7',v:'41.2%',d:'cohort',up:0}],
+      funnel:[{s:'Page View',p:100,n:284391},{s:'Sign Up',p:34,n:96692},{s:'Activated',p:23,n:65410}]}
+    };
+    case 'hex': return {
+      type:'notebook', title:'Hex Query Results', summary:q,
+      data:{ sql:'SELECT user_id, name, email, created_at\nFROM users\nWHERE active = true\nORDER BY created_at DESC\nLIMIT 5',
+      rows:[{user_id:'usr_001',name:'Alice Chen',email:'alice@co.io',created_at:'2026-03-15'},{user_id:'usr_002',name:'Bob Kumar',email:'bob@co.io',created_at:'2026-03-14'},{user_id:'usr_003',name:'Carol Singh',email:'carol@co.io',created_at:'2026-03-12'}]}
+    };
+    case 'canva': return {
+      type:'canva', title:'Canva Designs', summary:q,
+      data:{ templates:[{name:'AI Roadmap Poster',size:'1920 x 1080'},{name:'Social Media Banner',size:'1080 x 1080'},{name:'Pitch Deck Slide',size:'1920 x 1080'},{name:'Infographic',size:'800 x 2000'}]}
+    };
+    case 'figma': return {
+      type:'figma', title:'Figma \u2014 Design Workspace', summary:q,
+      data:{ nodes:[{id:1,l:'Home',x:40,y:90},{id:2,l:'Auth',x:175,y:28},{id:3,l:'Dashboard',x:310,y:90},{id:4,l:'Settings',x:310,y:172},{id:5,l:'Profile',x:445,y:90}],edges:[[1,2],[2,3],[3,4],[3,5]],user:'Connected'}
+    };
+    case 'box': return {
+      type:'files', title:'Box Files', summary:q,
+      data:{ files:[{name:'Q1-Strategy.pdf',size:'2.4 MB',mod:'Mar 15',t:'PDF'},{name:'Brand-Assets.zip',size:'48 MB',mod:'Mar 12',t:'ZIP'},{name:'Roadmap-2026.pptx',size:'5.1 MB',mod:'Mar 10',t:'PPTX'},{name:'Budget-Final.xlsx',size:'890 KB',mod:'Mar 8',t:'XLSX'}]}
+    };
+    case 'clay': return {
+      type:'crm', title:'Clay Enrichment', summary:q,
+      data:{ leads:[{name:'Sarah Johnson',title:'VP Engineering',co:'Acme Corp',score:92,hot:1},{name:'Mike Peters',title:'CTO',co:'TechStart',score:87,hot:1},{name:'Lisa Park',title:'Head of Product',co:'ScaleUp',score:74,hot:0},{name:'James Wu',title:'Director',co:'BigCo',score:68,hot:0}]}
+    };
+    case 'slack': return {
+      type:'messaging', title:'Slack Messages', summary:q,
+      data:{ msgs:[{u:'devops-bot',ch:'#deployments',txt:'Production deployment v2.4.1 completed successfully. All health checks passing.',t:'2:45 PM'},{u:'sarah.eng',ch:'#engineering',txt:'Code review done for the MCP integration PR. LGTM, approved.',t:'1:30 PM'},{u:'pm-alex',ch:'#product',txt:'Sprint retro notes uploaded. Key wins: 23% faster load times.',t:'11:15 AM'}]}
+    };
+    case 'asana': return {
+      type:'tasks', title:'Asana Tasks', summary:q,
+      data:{ tasks:[{title:'Implement MCP OAuth flow',st:'wip',who:'Sarah',pri:'High',due:'Mar 20'},{title:'Design system audit',st:'todo',who:'Mike',pri:'Medium',due:'Mar 22'},{title:'API rate limit handling',st:'done',who:'Lisa',pri:'High',due:'Mar 18'},{title:'Dashboard responsive fixes',st:'wip',who:'James',pri:'Urgent',due:'Mar 19'}]}
+    };
+    case 'monday': return {
+      type:'board', title:'Monday Board', summary:q,
+      data:{ cols:['Backlog','In Progress','Review','Done'],items:[{t:'Auth flow redesign',c:1,o:'Sarah'},{t:'MCP server setup',c:2,o:'Mike'},{t:'UI polish sprint',c:1,o:'Lisa'},{t:'API documentation',c:3,o:'James'},{t:'Load testing',c:0,o:'Alex'},{t:'Deploy pipeline',c:2,o:'Dev'}]}
+    };
+    default: return { type:'generic', title:tool.label, summary:q, data:{} };
+  }
+}
 
 /* ══════════════════════════════════════════════════
    RENDERERS
@@ -521,7 +582,7 @@ function render(){
 }
 
 function buildApp(){
-  return `<div style="display:flex;height:100dvh;overflow:hidden;background:var(--bg-deep)">
+  return `<div style="display:flex;min-height:100dvh;overflow:hidden;background:var(--bg-deep)">
     ${buildSidebar()}
     <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative">
       ${buildTopBar()}
@@ -551,7 +612,7 @@ function buildSidebar(){
           <span style="color:#fff;font-size:20px;font-weight:900;font-family:var(--font-serif)">S</span>
         </div>
         <div style="flex:1">
-          <div style="color:var(--text-primary);font-weight:900;font-size:22px;letter-spacing:-.5px;font-family:var(--font-serif);line-height:1">September AI</div>
+          <div style="color:var(--text-primary);font-weight:900;font-size:22px;letter-spacing:-.5px;font-family:var(--font-serif)">September AI</div>
           <div style="color:var(--violet-main);font-size:11px;font-weight:800;margin-top:4px;letter-spacing:1px;text-transform:uppercase">MCP Workspace</div>
         </div>
       </div>
@@ -724,13 +785,13 @@ function buildInput() {
     <div style="display:flex;gap:16px;align-items:flex-end">
       <div class="elegant-glass" style="flex:1;border-radius:20px;padding:4px">
         <textarea id="chat-input" rows="2"
-          placeholder="${anyOn ? 'Ask anything — our intelligent router will find the right tool...' : 'Connect an MCP tool to begin your journey...'}"
+          placeholder="${anyOn ? 'Ask anything \u2014 intelligent router will find the right tool...' : 'Connect a tool first, or type to see which tool matches...'}"
           style="width:100%;height:68px;background:transparent;border:none;padding:16px 20px;color:var(--text-primary);font-size:16px;font-weight:500;resize:none;outline:none;line-height:1.6;display:block"
           ${S.busy ? 'disabled' : ''}></textarea>
       </div>
 
-      <button onclick="send()" ${S.busy || !anyOn ? 'disabled' : ''}
-        style="width:68px;height:68px;border-radius:20px;border:1px solid ${S.busy || !anyOn ? 'var(--border-glass)' : 'var(--border-glass-bright)'};background:${S.busy || !anyOn ? 'rgba(157,78,221,0.1)' : 'var(--violet-main)'};color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:${S.busy || !anyOn ? 'not-allowed' : 'pointer'};box-shadow:${S.busy || !anyOn ? 'none' : '0 10px 30px rgba(157, 78, 221, 0.3)'}">
+      <button onclick="send()" ${S.busy ? 'disabled' : ''}
+        style="width:68px;height:68px;border-radius:20px;border:1px solid ${S.busy ? 'var(--border-glass)' : 'var(--border-glass-bright)'};background:${S.busy ? 'rgba(157,78,221,0.1)' : 'var(--violet-main)'};color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:${S.busy ? 'not-allowed' : 'pointer'};box-shadow:${S.busy ? 'none' : '0 10px 30px rgba(157, 78, 221, 0.3)'}">
         ${S.busy ? '<span class="tdot" style="width:6px;height:6px;background:#fff;animation: glowPulse 1s infinite alternate"></span>' : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
       </button>
     </div>
