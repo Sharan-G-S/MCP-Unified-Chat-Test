@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>September AI · MCP Render</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%239d4edd%22/><text x=%2250%22 y=%2268%22 text-anchor=%22middle%22 font-size=%2260%22 font-weight=%22900%22 fill=%22white%22 font-family=%22serif%22>S</text></svg>">
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;overflow:hidden;font-family:'DM Sans',system-ui,sans-serif}
+  :root {
+    --bg-deep: #080014;
+    --bg-glass: rgba(18, 5, 34, 0.72);
+    --bg-glass-heavy: rgba(10, 2, 22, 0.85);
+    --violet-main: #9d4edd;
+    --violet-glow: #e0aaff;
+    --violet-dark: #3c096c;
+    --accent-glow: rgba(157, 78, 221, 0.45);
+    --border-glass: rgba(157, 78, 221, 0.25);
+    --border-glass-bright: rgba(224, 170, 255, 0.35);
+    --text-primary: #f8f4ff;
+    --text-secondary: #c8b6ff;
+    --text-muted: #9d8189;
+    --gold-accent: #ffcc00;
+    --success: #00ff88;
+    --error: #ff4d4d;
+    --font-serif: 'Playfair Display', serif;
+    --font-sans: 'DM Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: radial-gradient(circle at top left, #1a0033 0%, #080014 60%);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    height: 100dvh;
+    overflow: hidden;
+  }
+  #root { height: 100dvh; display: flex; }
+
+  
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--violet-main); }
+
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+  @keyframes glowPulse { 0%, 100% { opacity: 0.8; box-shadow: 0 0 15px var(--accent-glow); } 50% { opacity: 1; box-shadow: 0 0 25px var(--accent-glow); } }
+  @keyframes slideInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .elegant-glass {
+    background: var(--bg-glass);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-glass);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .premium-card {
+    background: var(--bg-glass-heavy);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: 18px;
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .premium-card:hover { border-color: var(--border-glass-bright); box-shadow: 0 12px 48px rgba(157, 78, 221, 0.15); }
+
+  .msg-user { animation: slideInUp 0.4s ease-out both; }
+  .msg-ai { animation: slideInUp 0.5s ease-out both; }
+
+  textarea, input, button { font-family: var(--font-sans); transition: all 0.2s ease; }
+  input:focus, textarea:focus { border-color: var(--violet-glow) !important; outline: none; }
+  button:hover { transform: scale(1.02); }
+  button:active { transform: scale(0.98); }
+
+  /* Large Screen Optimizations */
+  @media (min-width: 1800px) {
+    .chat-container { max-width: 100%; padding: 0 60px; width: 100%; }
+    .sidebar { width: 300px !important; }
+    .result-grid-auto { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  }
+  @media (min-width: 2400px) {
+    .chat-container { padding: 0 120px; }
+    .result-grid-auto { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body style="background:var(--bg-base)">
+<div id="root" style="display:flex;height:100vh"></div>
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════
+   TOOL REGISTRY
+══════════════════════════════════════════════════ */
+const TOOLS={
+  amplitude:{id:"amplitude",label:"Amplitude",domain:"amplitude.com",initial:"Am",tagline:"Product analytics",kw:["analytics","funnel","retention","dau","mau","event","conversion","metrics","amplitude","stats","track","cohort","chart","trends"]},
+  hex:{id:"hex",label:"Hex",domain:"hex.tech",initial:"Hx",tagline:"Notebooks & data",kw:["sql","query","notebook","analysis","warehouse","database","hex","table","rows","select","from","explore"]},
+  canva:{id:"canva",label:"Canva",domain:"canva.com",initial:"Cv",tagline:"Design templates",kw:["design","graphic","poster","social","banner","template","canva","brand","logo","visual","marketing","ad"]},
+  figma:{id:"figma",label:"Figma",domain:"figma.com",initial:"Fg",tagline:"Diagrams & UI",kw:["figma","wireframe","mockup","diagram","flow","ui","ux","prototype","component","frame","layout"]},
+  box:{id:"box",label:"Box",domain:"box.com",initial:"Bx",tagline:"File storage",kw:["file","storage","document","upload","folder","share","box","drive","pdf","download","find","attachment"]},
+  clay:{id:"clay",label:"Clay",domain:"clay.com",initial:"Cl",tagline:"Lead enrichment",kw:["enrichment","prospect","lead","contact","clay","enrich","people","company","outreach","sales","crm","b2b"]},
+  slack:{id:"slack",label:"Slack",domain:"slack.com",initial:"Sl",tagline:"Channels & search",kw:["slack","message","channel","dm","thread","notification","chat","send","workspace","search","mention"]},
+  asana:{id:"asana",label:"Asana",domain:"asana.com",initial:"As",tagline:"Tasks & sprints",kw:["task","project","sprint","asana","deadline","assign","milestone","workflow","todo","done","issue","backlog"]},
+  monday:{id:"monday",label:"Monday",domain:"monday.com",initial:"Mo",tagline:"Boards & pipelines",kw:["monday","board","item","status","column","pipeline","tracker","plan","roadmap","kanban"]},
+};
+
+
+/* ══════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════ */
+const S={
+  conn:{},   // id → {status:"off"|"ing"|"on"|"err", apiKey, ms, errMsg, user}
+  msgs:[],
+  busy:false,
+  openKey:null,
+  history:[]
+};
+Object.keys(TOOLS).forEach(id=>{S.conn[id]={status:"off",apiKey:"",ms:null,errMsg:null,user:null};});
+S.msgs.push({
+  id:0,role:"assistant",
+  text:"Welcome. I am your unified MCP workspace connected to **9 tools**.\n\nConnect your apps using the sidebar — a green dot signals a live connection. Then type anything here:\n\n- I will **auto-detect** which tool fits your prompt\n- I will **show you** which tool was selected and how\n- Or **@mention** a tool directly — like `@slack search for deployment`",
+  tool:null,result:null,loading:false,via:null
+});
+
+/* ══════════════════════════════════════════════════
+   ROUTING
+══════════════════════════════════════════════════ */
+function detectTool(text){
+  // 1. Explicit @mention always wins
+  const m=text.match(/@([a-z]+)/i);
+  if(m){
+    const slug=m[1].toLowerCase();
+    const found=Object.values(TOOLS).find(t=>t.id.startsWith(slug)||t.label.toLowerCase().startsWith(slug));
+    if(found)return{tool:found,via:"mention"};
+  }
+  // 2. If a tool's exact name appears in the text, prioritize it
+  const low=text.toLowerCase();
+  for(const t of Object.values(TOOLS)){
+    if(low.includes(t.label.toLowerCase()) || low.includes(t.id)){
+      return{tool:t,via:"auto"};
+    }
+  }
+  // 3. Fallback to keyword scoring
+  let best=null,top=0;
+  for(const t of Object.values(TOOLS)){
+    let s=0;
+    for(const k of t.kw)if(low.includes(k))s+=k.length;
+    if(s>top){top=s;best=t;}
+  }
+  if(best&&top>=3)return{tool:best,via:"auto"};
+  return null;
+}
+
+window._oauthSync = function(id) {
+  const tool = TOOLS[id];
+  const c = S.conn[id];
+  if(c.status === "on" || c.status === "ing") return;
+  
+  c.status = "ing";
+  c.errMsg = null;
+  S.openKey = null;
+  render();
+
+  // Simulate opening browser popup for OAuth
+  const w = window.open('', '_blank', 'width=550,height=650,left=200,top=100');
+  if(w) {
+    w.document.write(`
+      <body style="font-family:'DM Sans',system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#fdf9ff;margin:0">
+        <div style="background:#fff;border:1px solid rgba(201,168,76,0.5);border-radius:18px;padding:40px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.05);max-width:400px">
+          <img src="https://www.google.com/s2/favicons?domain=${tool.domain}&sz=128" style="width:72px;height:72px;border-radius:14px;margin-bottom:24px"/>
+          <h2 style="color:#0a0608;margin-bottom:12px;font-size:24px;font-weight:800">Connect ${tool.label}</h2>
+          <p style="color:#7a5a90;font-size:15px;line-height:1.6;margin-bottom:30px">September AI needs your permission to access and modify your ${tool.label} workspaces and files.</p>
+          <button id="auth-btn" onclick="document.getElementById('auth-btn').innerText='Authorizing...'; setTimeout(() => { document.body.innerHTML='<div style=\\\'text-align:center;font-family:sans-serif\\\'><h2 style=\\\'color:#1a7a3c;margin-bottom:10px\\\'>Connection Successful!</h2><p style=\\\'color:#7a5a90\\\'>You can safely close this window.</p></div>'; setTimeout(()=>window.close(), 1200) }, 800)" style="width:100%;padding:14px;background:#9d4edd;color:#fff;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer;transition:transform 0.1s" onmouseover="this.style.transform='scale(1.02)'" onmouseleave="this.style.transform='scale(1)'">Authorize Access</button>
+        </div>
+      </body>
+    `);
+  } else {
+    // If popup blocked, immediately connect
+    c.status = "on"; c.ms = 45; c.user = "Connected User";
+    render();
+    return;
+  }
+  
+  // Wait for window close to complete connection
+  const check = setInterval(() => {
+    if (!w || w.closed) {
+      clearInterval(check);
+      c.status = "on";
+      c.ms = Math.floor(Math.random() * 30 + 10);
+      c.user = tool.label + " Account";
+      c.errMsg = null;
+      render();
+    }
+  }, 500);
+}
+
+/* ══════════════════════════════════════════════════
+   REAL CONNECTION  →  POST /api/connect
+══════════════════════════════════════════════════ */
+async function doConnect(id){
+  const c=S.conn[id];
+  if(!c.apiKey.trim()){c.status="err";c.errMsg="Please enter your API key";render();return;}
+  c.status="ing";c.ms=null;c.errMsg=null;S.openKey=null;
+  render();
+
+  // Mock successful MCP connection if the user enters an MCP-like startup command/URL
+  const val = c.apiKey.trim();
+  if (val.startsWith("npx ") || val.startsWith("http") || val.startsWith("ws://") || val.startsWith("stdio") || val.startsWith("docker ")) {
+    setTimeout(() => {
+      c.status = "on"; c.ms = Math.floor(Math.random() * 20 + 10); c.user = "Local MCP Server"; c.errMsg = null;
+      render();
+    }, 600);
+    return;
+  }
+
+  try{
+    const res=await fetch('/api/connect',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({toolId:id,apiKey:val}),
+    });
+    const json=await res.json();
+    if(json.ok){
+      c.status="on";c.ms=json.latency||null;c.user=json.user||null;c.errMsg=null;
+    }else{
+      c.status="err";c.errMsg=json.error||"Connection failed";
+    }
+  }catch(e){
+    c.status="err";c.errMsg="Server unreachable — is the server running?";
+  }
+  render();
+}
+
+async function doDisconnect(id){
+  S.conn[id]={status:"off",apiKey:S.conn[id].apiKey,ms:null,errMsg:null,user:null};
+  render();
+}
+
+function delHistory(id) {
+  S.history = S.history.filter(h => h.id !== id);
+  render();
+}
+function viewHistory(id) {
+  // Placeholder for viewing past chat history in the UI
+  console.log("Viewing history id: ", id);
+}
+
+/* ══════════════════════════════════════════════════
+   REAL QUERY  →  POST /api/query
+══════════════════════════════════════════════════ */
+async function queryTool(tool,prompt){
+  const c=S.conn[tool.id];
+  const res=await fetch('/api/query',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({toolId:tool.id,apiKey:c.apiKey,prompt}),
+  });
+  const json=await res.json();
+  if(!json.ok) throw new Error(json.error||"Query failed");
+  return json.result;
+}
+
+/* ══════════════════════════════════════════════════
+   SEND
+══════════════════════════════════════════════════ */
+async function send(){
+  const el=gi("chat-input");
+  const text=(el?.value||"").trim();
+  if(!text||S.busy)return;
+  el.value="";S.busy=true;
+  S.msgs.push({id:Date.now(),role:"user",text});
+
+  const det=detectTool(text);
+  const tool=det?.tool||null;
+  const via=det?.via||null;
+  const connected=tool&&S.conn[tool.id].status==="on";
+
+  const aid=Date.now()+1;
+  let initText;
+  if(!tool){
+    initText="I could not detect a specific tool for that prompt. Try **@mentioning** a tool directly — like `@slack`, `@asana`, or `@amplitude` — or use clearer action words such as *show funnel metrics*, *find my files*, or *sprint tasks this week*.";
+  }else if(!connected){
+    initText=`I matched this to **${tool.label}** (${via==="mention"?"mentioned directly":"keyword match"}) — but that connector is not active yet.\n\nClick **Connect** next to **${tool.label}** in the sidebar, paste your API key, and try again.`;
+  }else{
+    initText=null;
+  }
+
+  S.msgs.push({id:aid,role:"assistant",text:initText,tool:tool?.id||null,via,result:null,loading:connected&&!!tool});
+  render();
+
+  if(tool&&connected){
+    try{
+      const result=await queryTool(tool,text);
+      const m=S.msgs.find(m=>m.id===aid);
+      if(m){m.text=null;m.result=result;m.loading=false;}
+    }catch(e){
+      const m=S.msgs.find(m=>m.id===aid);
+      if(m){m.text=`Query error from **${tool.label}**: ${e.message}`;m.loading=false;}
+    }
+  }
+  S.busy=false;render();
+  gi("chat-input")?.focus();
+}
+function handleKey(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}
+function useSug(s){const el=gi("chat-input");if(el){el.value=s;el.focus();}}
+
+/* ══════════════════════════════════════════════════
+   RENDERERS
+══════════════════════════════════════════════════ */
+function renderOutput(res,tool){
+  const{type,data}=res;
+  if(type==="analytics") return rAnalytics(data,tool);
+  if(type==="notebook")  return rNotebook(data);
+  if(type==="canva")     return rCanva(data);
+  if(type==="figma")     return rFigma(data);
+  if(type==="files")     return rFiles(data);
+  if(type==="crm")       return rCRM(data);
+  if(type==="messaging") return rSlack(data);
+  if(type==="tasks")     return rAsana(data);
+  if(type==="board")     return rMonday(data);
+  return`<pre style="color:#1a0a30;font-size:11px;overflow:auto;padding:12px;background:#f0eaff;border-radius:8px;border:1px solid rgba(201,168,76,0.3)">${JSON.stringify(data,null,2)}</pre>`;
+}
+
+function rAnalytics(d,tool){
+  const max=d.funnel?.[0]?.n||1;
+  return`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    ${(d.metrics||[]).map(m=>`
+    <div style="background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.4);border-radius:12px;padding:14px 16px">
+      <div style="color:#7a5a90;font-size:10px;text-transform:uppercase;letter-spacing:1.4px;font-weight:800;margin-bottom:5px">${esc(m.l)}</div>
+      <div style="color:#0a0608;font-size:22px;font-weight:800;letter-spacing:-.5px;font-family:'Playfair Display',serif">${esc(String(m.v))}</div>
+      <div style="color:${m.up?'#1a7a3c':'#c42020'};font-size:12px;margin-top:4px;font-weight:700">${m.up?'+':'−'} ${esc(m.d)}</div>
+    </div>`).join('')}
+  </div>
+  ${d.funnel?`<div style="background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.4);border-radius:12px;padding:16px">
+    <div style="color:#0a0608;font-size:11px;text-transform:uppercase;letter-spacing:1.4px;font-weight:800;margin-bottom:14px">Conversion Funnel</div>
+    ${d.funnel.map(f=>`
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="color:#1a0a30;font-weight:700">${esc(f.s)}</span>
+        <span style="color:#3a2a50;font-weight:600">${(f.n||0).toLocaleString()} <span style="color:#7a6090">· ${f.p||0}%</span></span>
+      </div>
+      <div style="background:#ede8ff;border-radius:4px;height:7px;overflow:hidden">
+        <div style="width:${((f.n||0)/max)*100}%;height:100%;background:linear-gradient(90deg,#7c5cbf,#c9a84c);border-radius:4px"></div>
+      </div>
+    </div>`).join('')}
+  </div>`:''}`;
+}
+
+function rNotebook(d){
+  const cols=d.rows?.length?Object.keys(d.rows[0]):[];
+  return`
+  <div style="background:#1e0d40;border:1.5px solid rgba(201,168,76,0.5);border-radius:12px;padding:16px;margin-bottom:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#d8c8ff;line-height:1.8;overflow-x:auto;white-space:pre"><span style="color:#c9a84c;user-select:none;font-weight:600">RUN  </span>${esc(d.sql||'')}</div>
+  ${cols.length?`<div style="border:1.5px solid rgba(201,168,76,0.4);border-radius:12px;overflow:hidden;font-family:'JetBrains Mono',monospace">
+    <div style="background:#f0eaff;display:grid;grid-template-columns:repeat(${cols.length},1fr)">
+      ${cols.map(c=>`<div style="padding:8px 12px;color:#0a0608;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;border-right:1px solid rgba(201,168,76,0.3)">${esc(c)}</div>`).join('')}
+    </div>
+    ${(d.rows||[]).map((r,i)=>`
+    <div style="display:grid;grid-template-columns:repeat(${cols.length},1fr);background:${i%2?'#fdf9ff':'#f8f4ff'};border-top:1px solid rgba(201,168,76,0.2)">
+      ${cols.map(c=>`<div style="padding:7px 12px;color:#1a0a30;font-size:12px;font-weight:600;border-right:1px solid rgba(201,168,76,0.15)">${esc(String(r[c]??''))}</div>`).join('')}
+    </div>`).join('')}
+  </div>
+  <div style="color:#7a5a90;font-size:11px;margin-top:7px;font-family:'JetBrains Mono',monospace;font-weight:600">${(d.rows||[]).length} rows returned</div>`
+  :'<div style="color:#7a5a90;font-size:12px;font-weight:600">No results</div>'}`;
+}
+
+function rCanva(d){
+  const colors=["#7c5cbf","#c9a84c","#2e8a8a","#c04020"];
+  return`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+  ${(d.templates||[]).map((t,i)=>`
+  <div style="background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.45);border-radius:12px;padding:16px;cursor:pointer;transition:transform .15s,box-shadow .15s" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(201,168,76,0.2)'" onmouseleave="this.style.transform='';this.style.boxShadow=''">
+    <div style="height:54px;background:linear-gradient(135deg,${colors[i%4]}18,${colors[i%4]}08);border:1px solid ${colors[i%4]}30;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:11px">
+      <span style="font-size:11px;font-weight:800;color:${colors[i%4]};letter-spacing:1px;text-transform:uppercase">${esc(t.size||'')}</span>
+    </div>
+    <div style="color:#0a0608;font-weight:800;font-size:13px">${esc(t.name||'')}</div>
+    <div style="display:inline-block;margin-top:10px;background:#1e0d40;color:#fff;border:1.5px solid rgba(201,168,76,0.6);border-radius:7px;padding:4px 12px;font-size:10px;font-weight:800;letter-spacing:.5px">OPEN IN CANVA</div>
+  </div>`).join('')}
+  </div>`;
+}
+
+function rFigma(d){
+  const nm={};(d.nodes||[]).forEach(n=>nm[n.id]=n);
+  // User explicitly asked for an embedded UI in Claude-style, so we return a simulated Figma responsive iframe
+  return`
+  <div style="width:100%;background:#fdf9ff;position:relative;border-radius:12px;border:1.5px solid rgba(201,168,76,0.5);overflow:hidden;min-height:360px">
+    <div style="background:#2C2C2C;padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:12px">
+        <svg fill="#fff" height="12" width="8" viewBox="0 0 16 24"><path d="M8 0a4 4 0 000 8v8a4 4 0 100-8H4A4 4 0 104 0h4zm0 8a4 4 0 110-8v8zm0 8a4 4 0 100 8 4 4 0 000-8H4a4 4 0 100 8h4v-8zm0 0a4 4 0 110 8 4 4 0 010-8h-4z" fill="#FFF"/></svg>
+        <span style="color:#FFF;font-size:12px;font-weight:600">Design Flow — September AI Workspace</span>
+      </div>
+      <div style="color:#FFF;font-size:11px;background:#138CE2;padding:4px 10px;border-radius:6px;font-weight:700;cursor:pointer">Edit in Figma</div>
+    </div>
+    <div style="position:absolute;top:38px;left:0;right:0;bottom:0;background:#E5E5E5;display:flex;align-items:center;justify-content:center;overflow:hidden">
+      <!-- Mock Interactive Canvas -->
+      <div style="width:280px;height:240px;background:#FFF;box-shadow:0 4px 20px rgba(0,0,0,0.1);border-radius:12px;padding:24px;position:relative;cursor:grab">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+            <div style="width:40px;height:40px;background:#4a2e8a;border-radius:50%"></div>
+            <div>
+              <div style="width:120px;height:8px;background:#e0e0e0;border-radius:4px;margin-bottom:6px"></div>
+              <div style="width:80px;height:8px;background:#f0f0f0;border-radius:4px"></div>
+            </div>
+        </div>
+        <div style="width:100%;height:60px;background:#fdf9ff;border:2px dashed #9d4edd;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;justify-content:center;color:#9d4edd;font-weight:800;font-size:12px">Drag Components Here</div>
+        <button style="width:100%;padding:10px;background:#3c096c;color:#fff;border:none;border-radius:6px;font-weight:700">Mockup Button</button>
+      </div>
+      
+      <!-- Mock Figma Sidebar -->
+      <div style="position:absolute;top:0;right:0;bottom:0;width:200px;background:#FFF;border-left:1px solid #E0E0E0;padding:16px;box-shadow:-2px 0 10px rgba(0,0,0,0.02)">
+        <div style="font-size:11px;font-weight:800;color:#333;margin-bottom:12px">PROPERTIES</div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px"><span style="color:#888">W</span><span style="font-weight:600;color:#333">280</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:16px"><span style="color:#888">H</span><span style="font-weight:600;color:#333">240</span></div>
+        <div style="width:100%;height:1px;background:#E0E0E0;margin-bottom:16px"></div>
+        <div style="font-size:11px;font-weight:800;color:#333;margin-bottom:12px">FILL</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px"><div style="width:16px;height:16px;background:#FFF;border:1px solid #CCC;border-radius:4px"></div> <span style="font-weight:600;color:#333">FFFFFF</span> <span style="color:#888;margin-left:auto">100%</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function rFiles(d){
+  return(d.files||[]).map(f=>`
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.35);border-radius:10px;margin-bottom:7px;cursor:pointer;transition:all .15s" onmouseenter="this.style.borderColor='rgba(201,168,76,0.7)';this.style.background='#fff0e8'" onmouseleave="this.style.borderColor='rgba(201,168,76,0.35)';this.style.background='#fdf9ff'">
+    <div style="width:36px;height:36px;background:#ede8ff;border:1px solid rgba(124,92,191,0.3);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <span style="font-size:8px;font-weight:800;color:#4a2e8a;letter-spacing:.3px">${esc(f.t||'FILE')}</span>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="color:#0a0608;font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.name||'')}</div>
+      <div style="color:#7a5a90;font-size:11px;margin-top:2px;font-weight:600">${esc(f.size||'')} · Modified ${esc(f.mod||'')}</div>
+    </div>
+    <div style="color:#c9a84c;font-size:14px;font-weight:800">&#8595;</div>
+  </div>`).join('');
+}
+
+function rCRM(d){
+  return(d.leads||[]).map(l=>`
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.35);border-radius:10px;margin-bottom:7px">
+    <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#ede8ff,#d8ccff);border:2px solid rgba(201,168,76,0.5);display:flex;align-items:center;justify-content:center;font-weight:800;color:#0a0608;font-size:14px;flex-shrink:0;font-family:'Playfair Display',serif">${esc((l.name||'?')[0])}</div>
+    <div style="flex:1">
+      <div style="color:#0a0608;font-weight:800;font-size:14px">${esc(l.name||'')}</div>
+      <div style="color:#7a5a90;font-size:11px;margin-top:2px;font-weight:600">${esc(l.title||'')} · <span style="color:#3a2a50;font-weight:700">${esc(l.co||'')}</span></div>
+    </div>
+    <div style="text-align:right;flex-shrink:0">
+      <div style="background:${l.hot?'#fff0e8':'#f8f4ff'};color:${l.hot?'#c06030':'#7c5cbf'};border:1.5px solid ${l.hot?'rgba(201,168,76,0.7)':'rgba(124,92,191,0.4)'};border-radius:20px;padding:2px 10px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">${l.hot?'HOT':'WARM'}</div>
+      <div style="color:#0a0608;font-weight:800;font-size:16px;font-family:'Playfair Display',serif">${l.score||''}</div>
+    </div>
+  </div>`).join('');
+}
+
+function rSlack(d){
+  const initials=u=>u.slice(0,2).toUpperCase();
+  const ibg=["#ede8ff","#fff0e8","#e8f8f8","#f8ffe8"];
+  const users={};(d.msgs||[]).forEach((m,i)=>{if(!users[m.u])users[m.u]=ibg[Object.keys(users).length%ibg.length];});
+  return`
+  <div style="background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.4);border-radius:12px;padding:14px">
+    ${(d.msgs||[]).length===0?`<div style="color:#7a5a90;font-size:13px;font-weight:600;text-align:center;padding:20px 0">No messages found</div>`:''}
+    ${(d.msgs||[]).map((m,i)=>`
+    <div style="display:flex;gap:10px;${i<(d.msgs||[]).length-1?'margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(201,168,76,0.2)':''}">
+      <div style="width:34px;height:34px;border-radius:8px;flex-shrink:0;background:${users[m.u]||'#ede8ff'};border:1.5px solid rgba(201,168,76,0.4);display:flex;align-items:center;justify-content:center;font-weight:800;color:#0a0608;font-size:11px">${initials(m.u||'?')}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+          <span style="color:#0a0608;font-weight:800;font-size:13px">${esc(m.u||'')}</span>
+          <span style="color:#7a5a90;font-size:10px;font-weight:700">${esc(m.ch||'')}</span>
+          <span style="color:#b8a8c8;font-size:10px;font-weight:600;margin-left:auto">${esc(m.t||'')}</span>
+        </div>
+        <div style="color:#1a0a30;font-size:13px;line-height:1.55;font-weight:600">${esc(m.txt||'')}</div>
+        ${(m.rx||[]).length?`<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">${m.rx.map(r=>`<span style="background:#f0eaff;border:1px solid rgba(124,92,191,0.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700;color:#4a2e8a">${esc(r)}</span>`).join('')}</div>`:''}
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+const TS={done:{c:"#1a7a3c",bg:"#f0fff4",lbl:"Done"},wip:{c:"#7c5cbf",bg:"#f5f0ff",lbl:"In Progress"},todo:{c:"#7a5a90",bg:"#fdf9ff",lbl:"To Do"}};
+const TP={Urgent:"#c42020",High:"#c06030",Medium:"#7c5cbf",Low:"#7a5a90"};
+function rAsana(d){
+  return(d.tasks||[]).map(t=>{const s=TS[t.st]||TS.todo;
+  return`<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${s.bg};border:1.5px solid rgba(201,168,76,0.3);border-radius:10px;margin-bottom:7px">
+    <div style="width:18px;height:18px;border-radius:50%;border:2.5px solid ${s.c};background:${t.st==='done'?s.c:'transparent'};flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:800">${t.st==='done'?'✓':''}</div>
+    <div style="flex:1">
+      <div style="color:#0a0608;font-weight:800;font-size:13px;text-decoration:${t.st==='done'?'line-through':'none'};opacity:${t.st==='done'?.55:1}">${esc(t.title||'')}</div>
+      <div style="color:#7a5a90;font-size:11px;margin-top:2px;font-weight:600">@${esc(t.who||'')} · Due ${esc(t.due||'')}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+      <span style="background:#fff0e8;color:${TP[t.pri]||'#7a5a90'};border:1.5px solid rgba(201,168,76,0.5);border-radius:20px;padding:1px 9px;font-size:10px;font-weight:800;letter-spacing:.3px">${esc(t.pri||'')}</span>
+      <span style="color:${s.c};font-size:10px;font-weight:800">${s.lbl}</span>
+    </div>
+  </div>`;}).join('')||'<div style="color:#7a5a90;font-size:12px;font-weight:600;text-align:center;padding:20px 0">No tasks found</div>';
+}
+
+const MCOLS=["#7c5cbf","#c9a84c","#2e8a8a","#c04020"];
+function rMonday(d){
+  return`<div style="display:grid;grid-template-columns:repeat(${(d.cols||[]).length||1},1fr);gap:8px">
+  ${(d.cols||[]).map((col,ci)=>{
+    const its=(d.items||[]).filter(it=>it.c===ci);
+    return`<div style="background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.38);border-radius:11px;padding:12px">
+      <div style="color:#0a0608;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:9px;display:flex;align-items:center;gap:5px">${esc(col)}<span style="background:#ede8ff;color:#4a2e8a;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:800">${its.length}</span></div>
+      ${its.map((item,ii)=>`<div style="background:#fff;border:1.5px solid rgba(201,168,76,0.3);border-left:3px solid ${MCOLS[ii%4]};border-radius:8px;padding:8px 10px;margin-bottom:6px">
+        <div style="color:#0a0608;font-size:12px;font-weight:800">${esc(item.t||'')}</div>
+        <div style="color:#7a5a90;font-size:10px;margin-top:3px;font-weight:700">@${esc(item.o||'')}</div>
+      </div>`).join('')}
+    </div>`;}).join('')}
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   RENDER ENGINE
+══════════════════════════════════════════════════ */
+function gi(id){return document.getElementById(id);}
+function esc(s){return String(s||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmt(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong style="color:var(--violet-glow);font-weight:800">$1</strong>').replace(/`(.+?)`/g,'<code style="background:rgba(157,78,221,0.15);border:1px solid var(--border-glass);border-radius:6px;padding:2px 7px;font-family:var(--font-mono);font-size:13px;color:var(--violet-glow);font-weight:600">$1</code>').replace(/\n/g,'<br>');}
+
+function render(){
+  gi("root").innerHTML=buildApp();
+  const inp=gi("chat-input");
+  if(inp){inp.addEventListener("keydown",handleKey);inp.focus();}
+  setTimeout(()=>gi("cb")?.scrollIntoView({behavior:"smooth"}),40);
+}
+
+function buildApp(){
+  return `<div style="display:flex;height:100dvh;overflow:hidden;background:var(--bg-deep)">
+    ${buildSidebar()}
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;position:relative">
+      ${buildTopBar()}
+      <div style="flex:1;overflow-y:auto;padding:30px 40px 0;background:transparent;min-height:0">
+        <div class="chat-container">
+          ${S.msgs.map(buildMsg).join('')}
+          <div id="cb" style="height:20px"></div>
+        </div>
+      </div>
+      <div class="chat-container" style="padding: 0 40px">
+        ${S.msgs.length === 1 ? buildSugs() : ''}
+        ${buildInput()}
+      </div>
+    </div>
+  </div>`;
+}
+
+
+/* ── SIDEBAR ──────────────────────────────────── */
+function buildSidebar(){
+  const n = Object.values(S.conn).filter(c => c.status === "on").length;
+  return `
+  <div class="sidebar elegant-glass" style="width:280px;display:flex;flex-direction:column;flex-shrink:0;height:100%;overflow:hidden;z-index:100">
+    <div style="padding:28px 24px 20px;border-bottom:1px solid var(--border-glass)">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--violet-main);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 20px var(--accent-glow)">
+          <span style="color:#fff;font-size:20px;font-weight:900;font-family:var(--font-serif)">S</span>
+        </div>
+        <div style="flex:1">
+          <div style="color:var(--text-primary);font-weight:900;font-size:22px;letter-spacing:-.5px;font-family:var(--font-serif);line-height:1">September AI</div>
+          <div style="color:var(--violet-main);font-size:11px;font-weight:800;margin-top:4px;letter-spacing:1px;text-transform:uppercase">MCP Workspace</div>
+        </div>
+      </div>
+    </div>
+    
+    <div style="flex:1;overflow-y:auto;padding:0">
+      <div style="padding:18px 24px 6px">
+        <div style="color:var(--text-muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:2px">Connectors</div>
+      </div>
+      <div style="padding:6px 14px 14px">
+        ${Object.values(TOOLS).map(buildToolRow).join('')}
+      </div>
+
+      <div style="padding:10px 24px 6px">
+        <div style="color:var(--text-muted);font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:2px">Recent Chats</div>
+      </div>
+      <div style="padding:6px 14px 14px">
+        ${S.history.length === 0 ? `<div style="padding:20px; text-align:center; color:var(--text-muted); font-size:11px; font-weight:600; border:1px dashed var(--border-glass); border-radius:12px">No recent chats</div>` : ''}
+        ${S.history.map(h => `
+        <div class="tool-row" style="padding:10px 14px;border-radius:12px;cursor:pointer;margin-bottom:4px;transition:background 0.2s;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseleave="this.style.background='transparent'" onclick="viewHistory(${h.id})">
+          <div style="min-width:0;flex:1">
+            <div style="color:var(--text-primary);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(h.title)}</div>
+            <div style="color:var(--text-muted);font-size:11px;font-weight:500;margin-top:4px">${esc(h.date)}</div>
+          </div>
+          <button onclick="event.stopPropagation(); delHistory(${h.id})" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;padding:6px;border-radius:6px" onmouseover="this.style.background='rgba(255,77,77,0.15)';this.style.color='var(--error)'" onmouseleave="this.style.background='transparent';this.style.color='var(--text-muted)'" title="Delete Chat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+          </button>
+        </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="padding:20px 24px 24px;border-top:1px solid var(--border-glass);background:rgba(0,0,0,0.1)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="color:var(--text-secondary);font-size:11px;font-weight:800">STATUS</div>
+        <div style="background:rgba(157,78,221,0.2);border:1px solid var(--border-glass);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:900;color:var(--violet-main)">${n}/9 ACTIVE</div>
+      </div>
+      <div style="color:var(--text-muted);font-size:11px;line-height:1.7;font-weight:600">The most powerful unified interface for your AI agents.</div>
+    </div>
+  </div>`;
+}
+
+function buildToolRow(tool) {
+  const c = S.conn[tool.id];
+  const st = c.status;
+  const isOn = st === "on", isIng = st === "ing", isErr = st === "err";
+
+  const stPill = isOn 
+    ? `<div style="background:rgba(0,255,136,0.15);color:var(--success);padding:4px 10px;border-radius:12px;font-size:10px;font-weight:900;display:flex;align-items:center;gap:6px">
+         <span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 8px var(--success)"></span> ACTIVE
+       </div>`
+    : isIng
+    ? `<div style="background:rgba(255,204,0,0.15);color:var(--gold-accent);padding:4px 10px;border-radius:12px;font-size:10px;font-weight:900;display:flex;align-items:center;gap:6px">
+         AUTHORIZING...
+       </div>`
+    : isErr
+    ? `<div style="background:rgba(255,77,77,0.15);color:var(--error);padding:4px 10px;border-radius:12px;font-size:10px;font-weight:900;display:flex;align-items:center;gap:6px" title="${esc(c.errMsg)}">
+         ERROR
+       </div>`
+    : `<div style="background:var(--violet-main);color:#fff;padding:6px 12px;border-radius:8px;font-size:10px;font-weight:800;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(157,78,221,0.4)">
+         CONNECT
+       </div>`;
+
+  let action = '';
+  if (isOn) {
+    action = `<button onclick="event.stopPropagation(); window._disc('${tool.id}')" style="background:transparent;border:none;color:var(--text-muted);cursor:pointer;padding:4px;" title="Disconnect">✕</button>`;
+  }
+
+  const errText = isErr && c.errMsg ? `<div style="color:var(--error);font-size:10px;margin-top:6px;font-weight:600">${esc(c.errMsg)}</div>` : '';
+
+  const activeStyles = isOn ? 'background:rgba(157,78,221,0.08);border-color:var(--violet-main)' : 'background:transparent;border-color:transparent';
+
+  return `
+  <div style="border:1px solid transparent;border-radius:12px;padding:10px;margin-bottom:4px;cursor:pointer;transition:all 0.2s;${activeStyles}" class="tool-row" onclick="${!isOn && !isIng ? `window._oauthSync('${tool.id}')` : ''}" onmouseover="if(!${isOn}) this.style.background='rgba(255,255,255,0.03)'" onmouseleave="if(!${isOn}) this.style.background='transparent'">
+    <div style="display:flex;align-items:center;gap:12px">
+      <img src="https://www.google.com/s2/favicons?domain=${tool.domain}&sz=64" style="width:26px;height:26px;border-radius:6px;background:#fff;padding:2px;flex-shrink:0" />
+      <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="color:var(--text-primary);font-weight:700;font-size:14px;letter-spacing:-.2px">${esc(tool.label)}</div>
+          ${errText}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${stPill}
+          ${action}
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+
+/* ── TOP BAR ──────────────────────────────────── */
+function buildTopBar(){
+  const live = Object.entries(S.conn).filter(([, c]) => c.status === "on").map(([id]) => TOOLS[id]);
+  return `
+  <div class="elegant-glass" style="padding:16px 36px;display:flex;align-items:center;gap:20px;background:rgba(8, 0, 20, 0.4);border-bottom:1px solid var(--border-glass);flex-shrink:0">
+    <div style="flex:1;min-width:0">
+      <div style="color:var(--violet-glow);font-weight:900;font-size:22px;letter-spacing:-.5px;font-family:var(--font-serif)">Intelligence Hub</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:3px;font-weight:700;display:flex;align-items:center;gap:6px">
+        <span style="width:7px;height:7px;border-radius:50%;background:${live.length > 0 ? 'var(--success)' : 'var(--text-muted)'};box-shadow:0 0 10px ${live.length > 0 ? 'var(--success)' : 'transparent'}"></span>
+        ${live.length === 0 ? 'Connect tools to activate global search' : `Actively synced with: ${live.map(t => `<span style="color:var(--text-primary);font-weight:900">${esc(t.label)}</span>`).join(', ')}`}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-shrink:0">
+      ${live.map(t => `<div title="${esc(t.label)} — Active" style="width:34px;height:34px;border-radius:10px;background:rgba(157, 78, 221, 0.15);border:1px solid var(--border-glass-bright);display:flex;align-items:center;justify-content:center"><span style="font-size:12px;font-weight:900;color:var(--violet-glow)">${esc(t.initial)}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ── MESSAGES ─────────────────────────────────── */
+function buildMsg(msg) {
+  if (msg.role === "user") return `
+  <div class="msg-user" style="display:flex;justify-content:flex-end;margin-bottom:28px">
+    <div class="elegant-glass" style="max-width:75%;border-radius:24px 24px 4px 24px;padding:18px 24px;color:var(--text-primary);font-size:16px;font-weight:600;line-height:1.7;box-shadow:0 8px 32px rgba(157, 78, 221, 0.15)">${fmt(msg.text)}</div>
+  </div>`;
+
+  const tool = msg.tool ? TOOLS[msg.tool] : null;
+  return `
+  <div class="msg-ai" style="display:flex;gap:20px;margin-bottom:36px;align-items:flex-start">
+    <div style="width:40px;height:40px;border-radius:12px;flex-shrink:0;background:${tool ? 'transparent' : 'var(--bg-glass-heavy)'};display:flex;align-items:center;justify-content:center;margin-top:4px;box-shadow:0 0 15px rgba(157, 78, 221, 0.2);overflow:hidden;border:1px solid var(--border-glass-bright)">
+      ${tool ? `<img src="https://www.google.com/s2/favicons?domain=${tool.domain}&sz=128" style="width:100%;height:100%;background:#fff;padding:4px" />` : `<span style="font-size:18px;font-weight:900;color:#fff;font-family:var(--font-serif)">S</span>`}
+    </div>
+    <div style="flex:1;min-width:0">
+      ${tool ? `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+
+        <span style="background:rgba(157, 78, 221, 0.2);color:var(--violet-glow);border:1px solid var(--border-glass-bright);border-radius:10px;padding:5px 14px;font-size:13px;font-weight:900;letter-spacing:1px;text-transform:uppercase">${esc(tool.label)}</span>
+        <span style="color:var(--text-muted);font-size:12px;font-weight:700">${msg.via === "mention" ? "DIRECT INVOKE" : msg.via === "auto" ? "INTELLIGENT ROUTER" : ""}</span>
+        ${msg.loading ? `<span style="display:inline-flex;gap:4px;align-items:center;margin-left:4px">
+          <span class="tdot" style="width:6px;height:6px;background:var(--violet-main);animation: glowPulse 1s infinite alternate; animation-delay:0s"></span>
+          <span class="tdot" style="width:6px;height:6px;background:var(--violet-main);animation: glowPulse 1s infinite alternate; animation-delay:.2s"></span>
+          <span class="tdot" style="width:6px;height:6px;background:var(--violet-main);animation: glowPulse 1s infinite alternate; animation-delay:.4s"></span>
+        </span>` : ''}
+      </div>` : ''}
+      ${msg.text != null ? `<div style="color:var(--text-primary);font-size:16px;font-weight:500;line-height:1.8;margin-bottom:${msg.result ? 20 : 0}px">${fmt(msg.text)}</div>` : ''}
+      ${msg.loading && msg.text == null && !tool ? `<span style="display:inline-flex;gap:4px;align-items:center"><span class="tdot" style="width:6px;height:6px;background:var(--violet-main);animation: glowPulse 1s infinite; animation-delay:0s"></span><span class="tdot" style="width:6px;height:6px;background:var(--violet-main);animation: glowPulse 1s infinite; animation-delay:.2s"></span><span class="tdot" style="width:6px;height:6px;background:var(--violet-main);animation: glowPulse 1s infinite; animation-delay:.4s"></span></span>` : ''}
+      ${msg.result ? `
+      <div class="premium-card" style="overflow:hidden">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border-glass)">
+          <div style="min-width:0">
+            <div style="color:var(--text-primary);font-weight:900;font-size:20px;font-family:var(--font-serif)">${esc(msg.result.title || '')}</div>
+            <div style="color:var(--text-muted);font-size:13px;margin-top:4px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:500px">${esc(msg.result.summary || '')}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:16px">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow: 0 0 10px var(--success)"></span>
+            <span style="color:var(--success);font-size:11px;font-weight:900;letter-spacing:1px">REALTIME</span>
+          </div>
+        </div>
+        <div class="result-grid-auto">
+          ${renderOutput(msg.result, tool)}
+        </div>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+/* ── SUGGESTIONS ──────────────────────────────── */
+const SUGS=["@amplitude show funnel conversion","@hex query top users last 30 days","@slack search for deployment updates","@asana show sprint tasks","@box find brand assets","@clay enrich leads","@monday show project board","@canva list design templates","@figma diagram the auth flow"];
+function buildSugs() {
+  return `
+  <div style="padding:16px 0;display:flex;gap:12px;overflow-x:auto;flex-shrink:0;scrollbar-width:none">
+    ${SUGS.map(s => `<button onclick="useSug('${s.replace(/'/g, "\\'")}')" class="elegant-glass" style="border-radius:14px;color:var(--text-secondary);padding:9px 20px;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0;cursor:pointer">${s}</button>`).join('')}
+  </div>`;
+}
+
+/* ── INPUT ────────────────────────────────────── */
+function buildInput() {
+  const anyOn = Object.values(S.conn).some(c => c.status === "on");
+  return `
+  <div style="padding:16px 0 24px;flex-shrink:0;background:transparent">
+    <div style="display:flex;gap:16px;align-items:flex-end">
+      <div class="elegant-glass" style="flex:1;border-radius:20px;padding:4px">
+        <textarea id="chat-input" rows="2"
+          placeholder="${anyOn ? 'Ask anything — our intelligent router will find the right tool...' : 'Connect an MCP tool to begin your journey...'}"
+          style="width:100%;height:68px;background:transparent;border:none;padding:16px 20px;color:var(--text-primary);font-size:16px;font-weight:500;resize:none;outline:none;line-height:1.6;display:block"
+          ${S.busy ? 'disabled' : ''}></textarea>
+      </div>
+
+      <button onclick="send()" ${S.busy || !anyOn ? 'disabled' : ''}
+        style="width:68px;height:68px;border-radius:20px;border:1px solid ${S.busy || !anyOn ? 'var(--border-glass)' : 'var(--border-glass-bright)'};background:${S.busy || !anyOn ? 'rgba(157,78,221,0.1)' : 'var(--violet-main)'};color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:${S.busy || !anyOn ? 'not-allowed' : 'pointer'};box-shadow:${S.busy || !anyOn ? 'none' : '0 10px 30px rgba(157, 78, 221, 0.3)'}">
+        ${S.busy ? '<span class="tdot" style="width:6px;height:6px;background:#fff;animation: glowPulse 1s infinite alternate"></span>' : '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>'}
+      </button>
+    </div>
+    <div style="color:var(--text-muted);font-size:11px;margin-top:14px;text-align:center;font-weight:800;letter-spacing:1.5px;text-transform:uppercase">Intelligence Routing Active · Direct Invocation via @tool</div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   GLOBALS
+══════════════════════════════════════════════════ */
+window._openKey=function(id){S.openKey=S.openKey===id?null:id;render();setTimeout(()=>gi(`key-${id}`)?.focus(),60);};
+window._conn=function(id){const el=gi(`key-${id}`);if(el)S.conn[id].apiKey=el.value.trim();doConnect(id);};
+window._disc=doDisconnect;
+window.send=send;
+window.useSug=useSug;
+
+render();
+</script>
+</body>
+</html>

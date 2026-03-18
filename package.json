@@ -1,0 +1,18 @@
+{
+  "name": "september-mcp-render",
+  "version": "2.0.0",
+  "description": "Unified MCP chat UI with real connections to Amplitude, Hex, Canva, Figma, Box, Clay, Slack, Asana, Monday",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
