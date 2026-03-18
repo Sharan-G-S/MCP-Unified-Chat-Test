@@ -108,6 +108,7 @@ const TOOLS={
   asana:{id:"asana",label:"Asana",domain:"asana.com",initial:"As",tagline:"Tasks & sprints",kw:["task","project","sprint","asana","deadline","assign","milestone","workflow","todo","done","issue","backlog"]},
   monday:{id:"monday",label:"Monday",domain:"monday.com",initial:"Mo",tagline:"Boards & pipelines",kw:["monday","board","item","status","column","pipeline","tracker","plan","roadmap","kanban"]},
 };
+const SUGS=["@amplitude show funnel conversion","@hex query top users last 30 days","@slack search for deployment updates","@asana show sprint tasks","@box find brand assets","@clay enrich leads","@monday show project board","@canva list design templates","@figma diagram the auth flow"];
 
 
 /* ══════════════════════════════════════════════════
@@ -951,7 +952,6 @@ function buildMsg(msg) {
 }
 
 /* ── SUGGESTIONS ──────────────────────────────── */
-const SUGS=["@amplitude show funnel conversion","@hex query top users last 30 days","@slack search for deployment updates","@asana show sprint tasks","@box find brand assets","@clay enrich leads","@monday show project board","@canva list design templates","@figma diagram the auth flow"];
 function buildSugs() {
   return `
   <div style="padding:16px 0;display:flex;gap:12px;overflow-x:auto;flex-shrink:0;scrollbar-width:none">
