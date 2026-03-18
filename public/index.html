@@ -126,7 +126,7 @@ try { const h=JSON.parse(localStorage.getItem('sept_history')||'[]'); if(Array.i
 function saveHistory(){ try{localStorage.setItem('sept_history',JSON.stringify(S.history))}catch(e){} }
 function newChat(){
   S.msgs=[{id:0,role:'assistant',text:'Welcome. I am your unified MCP workspace connected to **9 tools**.\n\nConnect your apps using the sidebar \u2014 a green dot signals a live connection. Then type anything here:\n\n- I will **auto-detect** which tool fits your prompt\n- I will **show you** which tool was selected and how\n- Or **@mention** a tool directly \u2014 like `@slack search for deployment`',tool:null,result:null,loading:false,via:null}];
-  render();
+  if(typeof render==='function') render();
 }
 newChat();
 
