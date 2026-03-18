@@ -1,6 +1,6 @@
-# September MCP Render v2
+#  MCP Render 
 
-A unified chat interface that connects to **9 real MCP tool APIs** and renders rich UI directly in the chat.
+A Unified Chat interface that connects to  real MCP tool APIs and renders rich UI directly in the chat.
 
 ---
 
