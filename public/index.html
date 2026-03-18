@@ -343,8 +343,19 @@ function generateMockResult(tool, prompt) {
       data:{ templates:[{name:'AI Roadmap Poster',size:'1920 x 1080'},{name:'Social Media Banner',size:'1080 x 1080'},{name:'Pitch Deck Slide',size:'1920 x 1080'},{name:'Infographic',size:'800 x 2000'}]}
     };
     case 'figma': return {
-      type:'figma', title:'Figma \u2014 Design Workspace', summary:q,
-      data:{ nodes:[{id:1,l:'Home',x:40,y:90},{id:2,l:'Auth',x:175,y:28},{id:3,l:'Dashboard',x:310,y:90},{id:4,l:'Settings',x:310,y:172},{id:5,l:'Profile',x:445,y:90}],edges:[[1,2],[2,3],[3,4],[3,5]],user:'Connected'}
+      type:'figma', title:'Figma', summary:q,
+      data:{
+        nodes:[
+          {id:1,l:'ROBOTICS.CORE',x:30,y:20,w:130,h:55,bg:'#1a3a6b',fg:'#fff'},
+          {id:2,l:'START\nHigh School /\nFresh Graduate',x:30,y:120,w:150,h:70,bg:'#f5f5f5',fg:'#333',border:'#333'},
+          {id:3,l:'Mathematics\n& Statistics\n(Linear Algebra,\nCalc, Prob)',x:220,y:120,w:140,h:70,bg:'#fff',fg:'#333',border:'#333'},
+          {id:4,l:'Programming\nFundamentals\n(Python, C++)',x:400,y:120,w:140,h:70,bg:'#fff',fg:'#333',border:'#333'},
+          {id:5,l:'Data Structures\n& Algorithms',x:580,y:120,w:130,h:55,bg:'#fff',fg:'#333',border:'#333'},
+          {id:6,l:'AI.CORE',x:30,y:240,w:130,h:55,bg:'#1a3a6b',fg:'#fff'}
+        ],
+        edges:[[2,3],[3,4],[4,5]],
+        desc:'Here\'s your **AI & Robotics Career Roadmap** in FigJam!\n\nThe roadmap is structured into **6 major phases**:\n\n**Foundation Phase (0-12 months)** Math, Python/C++, algorithms, and Linux — the non-negotiable base for everything that follows.\n\n**AI/ML Core (Year 1-2)** Machine learning, Deep learning, Computer Vision, NLP/LLMs, and Reinforcement Learning.\n\n**Robotics Core (Year 1-2)** Electronics, Kinematics, ROS 2, Sensors, and SLAM/Navigation — the physical intelligence layer.\n\n**Integration Phase (Year 2-3)** Robot Perception, Manipulation, Simulation-to-Real transfer, and Edge AI on devices like NVIDIA Jetson.\n\n**Specialization (Year 3-4)** Choose your track: Autonomous Vehicles, Medical Robotics, Humanoid Robots, Industrial Automation, or AI Research.\n\n**Career Outcomes** Each track maps to real-world roles at companies like Tesla, Waymo, Boston Dynamics, Intuitive Surgical, ABB, DeepMind, and OpenAI.\n\nYou can click "**Edit in Figma**" to edit, add timelines, annotate milestones, or share it with others!'
+      }
     };
     case 'box': return {
       type:'files', title:'Box Files', summary:q,
@@ -427,7 +438,7 @@ function rNotebook(d){
     </div>`).join('')}
   </div>
   <div style="color:#7a5a90;font-size:11px;margin-top:7px;font-family:'JetBrains Mono',monospace;font-weight:600">${(d.rows||[]).length} rows returned</div>`
-  :'<div style="color:#7a5a90;font-size:12px;font-weight:600">No results</div>'}`; 
+  :'<div style="color:#7a5a90;font-size:12px;font-weight:600">No results</div>'}`;
 }
 
 function rCanva(d){
@@ -448,63 +459,76 @@ function rFigma(d){
   const nodes=d.nodes||[], edges=d.edges||[], nm={};
   nodes.forEach(n=>nm[n.id]=n);
   const uid='fig_'+Date.now();
-  const nodeEls=nodes.map(n=>`
-    <div id="${uid}_n${n.id}" onclick="window._figSelect('${uid}',${n.id})" style="position:absolute;left:${n.x}px;top:${n.y}px;min-width:90px;padding:10px 16px;background:#FFF;border:2px solid #E0E0E0;border-radius:8px;cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all 0.15s;user-select:none;z-index:2" onmouseover="this.style.borderColor='#9d4edd';this.style.boxShadow='0 4px 16px rgba(157,78,221,0.25)'" onmouseleave="if(!this.dataset.sel){this.style.borderColor='#E0E0E0';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'}">${esc(n.l||'')}</div>`).join('');
-  const edgeSvg=edges.map(([a,b])=>{const na=nm[a],nb=nm[b];if(!na||!nb)return'';return`<line x1="${na.x+45}" y1="${na.y+20}" x2="${nb.x+45}" y2="${nb.y+20}" stroke="#9d4edd" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#${uid}_arr)"/>`;}).join('');
-  return`
-  <div style="width:100%;border-radius:12px;border:1.5px solid rgba(157,78,221,0.4);overflow:hidden;background:#FFF">
-    <div style="background:#2C2C2C;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;align-items:center;gap:12px">
-        <svg width="16" height="24" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 119 9.5 9.5 9.5 0 01-9-9.5z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 019.5 38H19v9.5a9.5 9.5 0 11-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 000-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 009.5 19H19V0H9.5A9.5 9.5 0 000 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 009.5 38H19V19H9.5A9.5 9.5 0 000 28.5z" fill="#A259FF"/></svg>
-        <span style="color:#FFF;font-size:13px;font-weight:600">Design Flow — September AI</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div onclick="window._figSync(this)" style="color:#FFF;font-size:11px;background:#2e8a2e;padding:5px 14px;border-radius:6px;font-weight:700;cursor:pointer">Sync from Figma</div>
-        <a href="https://www.figma.com" target="_blank" rel="noopener" style="text-decoration:none;color:#FFF;font-size:11px;background:#138CE2;padding:5px 14px;border-radius:6px;font-weight:700">Edit in Figma</a>
+  const desc=d.desc||'';
+
+  // Build colored roadmap-style nodes
+  const nodeEls=nodes.map(n=>{
+    const w=n.w||120, h=n.h||50, bg=n.bg||'#FFF', fg=n.fg||'#333', bdr=n.border||bg;
+    
+    return `
+    <div id="${uid}_n${n.id}" onclick="window._figSelect('${uid}',${n.id})" style="position:absolute;left:${n.x}px;top:${n.y}px;width:${w}px;min-height:${h}px;padding:10px 14px;background:${bg};border:2px solid ${bdr};border-radius:8px;cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:${fg};box-shadow:0 2px 8px rgba(0,0,0,0.1);z-index:2;display:flex;align-items:center;justify-content:center;line-height:1.4;white-space:pre-line;user-select:none">${esc(n.l||'')}</div>`;
+  }).join('');
+
+  // Flow arrows between connected nodes
+  const edgeSvg=edges.map(([a,b])=>{
+    const na=nm[a],nb=nm[b];
+    if(!na||!nb)return'';
+    const aw=na.w||120, bw=nb.w||120, ah=na.h||50;
+    const x1=na.x+aw, y1=na.y+ah/2, x2=nb.x, y2=nb.y+(nb.h||50)/2;
+    const mx=(x1+x2)/2;
+    return `<path d="M${x1},${y1} L${mx-10},${y1} L${mx-10},${y2} L${x2},${y2}" fill="none" stroke="#555" stroke-width="1.5" marker-end="url(#${uid}_arr)"/>`;
+  }).join('');
+
+  return `
+  <div style="width:100%;border-radius:14px;border:1px solid rgba(157,78,221,0.3);overflow:hidden;background:#2C2C2C">
+    <!-- Header -->
+    <div style="padding:12px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #444">
+      <svg width="14" height="20" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 119 9.5 9.5 9.5 0 01-9-9.5z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 019.5 38H19v9.5a9.5 9.5 0 11-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 000-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 009.5 19H19V0H9.5A9.5 9.5 0 000 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 009.5 38H19V19H9.5A9.5 9.5 0 000 28.5z" fill="#A259FF"/></svg>
+      <span style="color:#ccc;font-size:14px;font-weight:600">Figma</span>
+    </div>
+    <!-- Canvas with dotted grid -->
+    <div style="background:#e8e8e8;background-image:radial-gradient(circle,#ccc 1px,transparent 1px);background-size:20px 20px;position:relative;min-height:320px;padding:20px;overflow:auto">
+      <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1"><defs><marker id="${uid}_arr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#555"/></marker></defs>${edgeSvg}</svg>
+      ${nodeEls}
+    </div>
+    <!-- Bottom toolbar like Claude -->
+    <div style="background:#2C2C2C;padding:10px 18px;display:flex;justify-content:flex-end;align-items:center;gap:12px;border-top:1px solid #444">
+      <a href="https://www.figma.com" target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;gap:8px;background:#3C3C3C;border:1px solid #555;border-radius:8px;padding:6px 14px;color:#ddd;font-size:12px;font-weight:600;cursor:pointer">
+        <svg width="12" height="18" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 119 9.5 9.5 9.5 0 01-9-9.5z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 019.5 38H19v9.5a9.5 9.5 0 11-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 000-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 009.5 19H19V0H9.5A9.5 9.5 0 000 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 009.5 38H19V19H9.5A9.5 9.5 0 000 28.5z" fill="#A259FF"/></svg>
+        Edit in Figma
+      </a>
+      <div style="display:flex;align-items:center;gap:2px">
+        <button onclick="window._figZoom('${uid}',-1)" style="width:30px;height:30px;background:#3C3C3C;border:1px solid #555;border-radius:6px 0 0 6px;color:#ddd;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">−</button>
+        <button onclick="window._figZoom('${uid}',1)" style="width:30px;height:30px;background:#3C3C3C;border:1px solid #555;border-left:none;border-radius:0 6px 6px 0;color:#ddd;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>
       </div>
     </div>
-    <div style="display:flex;min-height:300px">
-      <div style="flex:1;background:#F5F5F5;position:relative;min-height:300px;padding:20px">
-        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1"><defs><marker id="${uid}_arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#9d4edd"/></marker></defs>${edgeSvg}</svg>
-        ${nodeEls}
-      </div>
-      <div id="${uid}_props" style="width:220px;background:#FFF;border-left:1px solid #E8E8E8;padding:20px;flex-shrink:0">
-        <div style="font-size:11px;font-weight:800;color:#333;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">Properties</div>
-        <div id="${uid}_propContent" style="color:#888;font-size:12px;font-weight:500">Click a node to inspect and edit.</div>
-      </div>
-    </div>
-    <div style="background:#FAFAFA;border-top:1px solid #E8E8E8;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:11px;color:#888;font-weight:600">${nodes.length} nodes · ${edges.length} edges · <span style="color:#1a7a3c">MCP Connected</span></span>
-      <div onclick="window._figAddNode('${uid}')" style="padding:4px 12px;background:#9d4edd;color:#fff;border-radius:6px;font-size:10px;font-weight:800;cursor:pointer">+ Add Node</div>
-    </div>
-  </div>`;
+  </div>
+  ${desc ? `<div style="color:var(--text-primary);font-size:15px;font-weight:500;line-height:1.9;margin-top:20px">${fmt(desc)}</div>` : ''}`;
 }
 window._figSelect=function(uid,nid){
-  document.querySelectorAll('[id^="'+uid+'_n"]').forEach(el=>{el.style.borderColor='#E0E0E0';el.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';el.dataset.sel='';});
+  document.querySelectorAll('[id^="'+uid+'_n"]').forEach(el=>{el.style.outline='none';el.dataset.sel='';});
   const el=document.getElementById(uid+'_n'+nid);
-  if(el){el.style.borderColor='#9d4edd';el.style.boxShadow='0 4px 16px rgba(157,78,221,0.3)';el.dataset.sel='1';}
-  const p=document.getElementById(uid+'_propContent');
-  if(p&&el){const lb=el.innerText.trim();p.innerHTML=`
-    <div style="margin-bottom:14px"><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">LABEL</div>
-    <input value="${lb}" onchange="document.getElementById('${uid}_n${nid}').innerText=this.value" style="width:100%;padding:6px 10px;border:1px solid #DDD;border-radius:6px;font-size:13px;font-weight:600;color:#333;outline:none"/></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      <div><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">X</div><input value="${parseInt(el.style.left)}" type="number" onchange="document.getElementById('${uid}_n${nid}').style.left=this.value+'px'" style="width:100%;padding:5px 8px;border:1px solid #DDD;border-radius:6px;font-size:12px;color:#333;outline:none"/></div>
-      <div><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">Y</div><input value="${parseInt(el.style.top)}" type="number" onchange="document.getElementById('${uid}_n${nid}').style.top=this.value+'px'" style="width:100%;padding:5px 8px;border:1px solid #DDD;border-radius:6px;font-size:12px;color:#333;outline:none"/></div>
-    </div>
-    <div style="margin-bottom:14px"><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">FILL</div>
-    <div style="display:flex;gap:6px">${['#FFF','#F0EAFF','#E8F5E9','#FFF3E0','#FFEBEE','#E3F2FD'].map(c=>`<div onclick="document.getElementById('${uid}_n${nid}').style.background='${c}'" style="width:24px;height:24px;background:${c};border:1.5px solid ${c==='#FFF'?'#CCC':c};border-radius:6px;cursor:pointer"></div>`).join('')}</div></div>
-    <button onclick="document.getElementById('${uid}_n${nid}').remove()" style="width:100%;padding:6px;background:#FFEBEE;color:#c42020;border:1px solid #FFCDD2;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:8px">Delete Node</button>
-  `;}
+  if(el){el.style.outline='3px solid #9d4edd';el.dataset.sel='1';}
 };
-window._figSync=function(btn){const o=btn.innerHTML;btn.innerHTML='Syncing...';btn.style.background='#c9a84c';setTimeout(()=>{btn.innerHTML=o;btn.style.background='#2e8a2e';},1500);};
+window._figZoom=function(uid,dir){
+  const canvas=document.querySelector('[style*="radial-gradient"]');
+  if(!canvas) return;
+  const cur=parseFloat(canvas.dataset.zoom||'1');
+  const nz=Math.max(0.5,Math.min(2,cur+(dir*0.15)));
+  canvas.dataset.zoom=nz;
+  canvas.style.transform='scale('+nz+')';
+  canvas.style.transformOrigin='top left';
+};
 window._figAddNode=function(uid){
-  const pp=document.getElementById(uid+'_props');if(!pp)return;
-  const cv=pp.parentElement.firstElementChild;if(!cv)return;
+  const canvases=document.querySelectorAll('[style*="radial-gradient"]');
+  const canvas=canvases[canvases.length-1];
+  if(!canvas)return;
   const nid=Date.now(),d=document.createElement('div');
   d.id=uid+'_n'+nid;d.innerText='New Node';
   d.onclick=function(){window._figSelect(uid,nid);};
-  d.style.cssText='position:absolute;left:200px;top:140px;min-width:90px;padding:10px 16px;background:#FFF;border:2px solid #9d4edd;border-radius:8px;cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:#333;box-shadow:0 4px 16px rgba(157,78,221,0.25);z-index:2;animation:fadeIn 0.3s ease';
-  cv.appendChild(d);window._figSelect(uid,nid);
+  d.style.cssText='position:absolute;left:200px;top:200px;width:120px;min-height:50px;padding:10px 14px;background:#FFF;border:2px solid #333;border-radius:8px;cursor:pointer;text-align:center;font-size:11px;font-weight:700;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.1);z-index:2;display:flex;align-items:center;justify-content:center;user-select:none;animation:fadeIn 0.3s ease';
+  canvas.appendChild(d);
+  window._figSelect(uid,nid);
 };
 function rFiles(d){
   return(d.files||[]).map(f=>`
