@@ -427,7 +427,7 @@ function rNotebook(d){
     </div>`).join('')}
   </div>
   <div style="color:#7a5a90;font-size:11px;margin-top:7px;font-family:'JetBrains Mono',monospace;font-weight:600">${(d.rows||[]).length} rows returned</div>`
-  :'<div style="color:#7a5a90;font-size:12px;font-weight:600">No results</div>'}`;
+  :'<div style="color:#7a5a90;font-size:12px;font-weight:600">No results</div>'}`; 
 }
 
 function rCanva(d){
@@ -439,50 +439,73 @@ function rCanva(d){
       <span style="font-size:11px;font-weight:800;color:${colors[i%4]};letter-spacing:1px;text-transform:uppercase">${esc(t.size||'')}</span>
     </div>
     <div style="color:#0a0608;font-weight:800;font-size:13px">${esc(t.name||'')}</div>
-    <div style="display:inline-block;margin-top:10px;background:#1e0d40;color:#fff;border:1.5px solid rgba(201,168,76,0.6);border-radius:7px;padding:4px 12px;font-size:10px;font-weight:800;letter-spacing:.5px">OPEN IN CANVA</div>
+    <a href="https://www.canva.com" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;background:#1e0d40;color:#fff;border:1.5px solid rgba(201,168,76,0.6);border-radius:7px;padding:4px 12px;font-size:10px;font-weight:800;letter-spacing:.5px;text-decoration:none">OPEN IN CANVA</a>
   </div>`).join('')}
   </div>`;
 }
 
 function rFigma(d){
-  const nm={};(d.nodes||[]).forEach(n=>nm[n.id]=n);
-  // User explicitly asked for an embedded UI in Claude-style, so we return a simulated Figma responsive iframe
+  const nodes=d.nodes||[], edges=d.edges||[], nm={};
+  nodes.forEach(n=>nm[n.id]=n);
+  const uid='fig_'+Date.now();
+  const nodeEls=nodes.map(n=>`
+    <div id="${uid}_n${n.id}" onclick="window._figSelect('${uid}',${n.id})" style="position:absolute;left:${n.x}px;top:${n.y}px;min-width:90px;padding:10px 16px;background:#FFF;border:2px solid #E0E0E0;border-radius:8px;cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:#333;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all 0.15s;user-select:none;z-index:2" onmouseover="this.style.borderColor='#9d4edd';this.style.boxShadow='0 4px 16px rgba(157,78,221,0.25)'" onmouseleave="if(!this.dataset.sel){this.style.borderColor='#E0E0E0';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'}">${esc(n.l||'')}</div>`).join('');
+  const edgeSvg=edges.map(([a,b])=>{const na=nm[a],nb=nm[b];if(!na||!nb)return'';return`<line x1="${na.x+45}" y1="${na.y+20}" x2="${nb.x+45}" y2="${nb.y+20}" stroke="#9d4edd" stroke-width="1.5" stroke-dasharray="6,4" marker-end="url(#${uid}_arr)"/>`;}).join('');
   return`
-  <div style="width:100%;background:#fdf9ff;position:relative;border-radius:12px;border:1.5px solid rgba(201,168,76,0.5);overflow:hidden;min-height:360px">
-    <div style="background:#2C2C2C;padding:8px 12px;display:flex;align-items:center;justify-content:space-between">
+  <div style="width:100%;border-radius:12px;border:1.5px solid rgba(157,78,221,0.4);overflow:hidden;background:#FFF">
+    <div style="background:#2C2C2C;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="display:flex;align-items:center;gap:12px">
-        <svg fill="#fff" height="12" width="8" viewBox="0 0 16 24"><path d="M8 0a4 4 0 000 8v8a4 4 0 100-8H4A4 4 0 104 0h4zm0 8a4 4 0 110-8v8zm0 8a4 4 0 100 8 4 4 0 000-8H4a4 4 0 100 8h4v-8zm0 0a4 4 0 110 8 4 4 0 010-8h-4z" fill="#FFF"/></svg>
-        <span style="color:#FFF;font-size:12px;font-weight:600">Design Flow — September AI Workspace</span>
+        <svg width="16" height="24" viewBox="0 0 38 57" fill="none"><path d="M19 28.5a9.5 9.5 0 119 9.5 9.5 9.5 0 01-9-9.5z" fill="#1ABCFE"/><path d="M0 47.5A9.5 9.5 0 019.5 38H19v9.5a9.5 9.5 0 11-19 0z" fill="#0ACF83"/><path d="M19 0v19h9.5a9.5 9.5 0 000-19H19z" fill="#FF7262"/><path d="M0 9.5A9.5 9.5 0 009.5 19H19V0H9.5A9.5 9.5 0 000 9.5z" fill="#F24E1E"/><path d="M0 28.5A9.5 9.5 0 009.5 38H19V19H9.5A9.5 9.5 0 000 28.5z" fill="#A259FF"/></svg>
+        <span style="color:#FFF;font-size:13px;font-weight:600">Design Flow — September AI</span>
       </div>
-      <div style="color:#FFF;font-size:11px;background:#138CE2;padding:4px 10px;border-radius:6px;font-weight:700;cursor:pointer">Edit in Figma</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div onclick="window._figSync(this)" style="color:#FFF;font-size:11px;background:#2e8a2e;padding:5px 14px;border-radius:6px;font-weight:700;cursor:pointer">Sync from Figma</div>
+        <a href="https://www.figma.com" target="_blank" rel="noopener" style="text-decoration:none;color:#FFF;font-size:11px;background:#138CE2;padding:5px 14px;border-radius:6px;font-weight:700">Edit in Figma</a>
+      </div>
     </div>
-    <div style="position:absolute;top:38px;left:0;right:0;bottom:0;background:#E5E5E5;display:flex;align-items:center;justify-content:center;overflow:hidden">
-      <!-- Mock Interactive Canvas -->
-      <div style="width:280px;height:240px;background:#FFF;box-shadow:0 4px 20px rgba(0,0,0,0.1);border-radius:12px;padding:24px;position:relative;cursor:grab">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-            <div style="width:40px;height:40px;background:#4a2e8a;border-radius:50%"></div>
-            <div>
-              <div style="width:120px;height:8px;background:#e0e0e0;border-radius:4px;margin-bottom:6px"></div>
-              <div style="width:80px;height:8px;background:#f0f0f0;border-radius:4px"></div>
-            </div>
-        </div>
-        <div style="width:100%;height:60px;background:#fdf9ff;border:2px dashed #9d4edd;border-radius:8px;margin-bottom:20px;display:flex;align-items:center;justify-content:center;color:#9d4edd;font-weight:800;font-size:12px">Drag Components Here</div>
-        <button style="width:100%;padding:10px;background:#3c096c;color:#fff;border:none;border-radius:6px;font-weight:700">Mockup Button</button>
+    <div style="display:flex;min-height:300px">
+      <div style="flex:1;background:#F5F5F5;position:relative;min-height:300px;padding:20px">
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1"><defs><marker id="${uid}_arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L0,8 L8,4 z" fill="#9d4edd"/></marker></defs>${edgeSvg}</svg>
+        ${nodeEls}
       </div>
-      
-      <!-- Mock Figma Sidebar -->
-      <div style="position:absolute;top:0;right:0;bottom:0;width:200px;background:#FFF;border-left:1px solid #E0E0E0;padding:16px;box-shadow:-2px 0 10px rgba(0,0,0,0.02)">
-        <div style="font-size:11px;font-weight:800;color:#333;margin-bottom:12px">PROPERTIES</div>
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px"><span style="color:#888">W</span><span style="font-weight:600;color:#333">280</span></div>
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:16px"><span style="color:#888">H</span><span style="font-weight:600;color:#333">240</span></div>
-        <div style="width:100%;height:1px;background:#E0E0E0;margin-bottom:16px"></div>
-        <div style="font-size:11px;font-weight:800;color:#333;margin-bottom:12px">FILL</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:11px"><div style="width:16px;height:16px;background:#FFF;border:1px solid #CCC;border-radius:4px"></div> <span style="font-weight:600;color:#333">FFFFFF</span> <span style="color:#888;margin-left:auto">100%</span></div>
+      <div id="${uid}_props" style="width:220px;background:#FFF;border-left:1px solid #E8E8E8;padding:20px;flex-shrink:0">
+        <div style="font-size:11px;font-weight:800;color:#333;margin-bottom:16px;text-transform:uppercase;letter-spacing:1px">Properties</div>
+        <div id="${uid}_propContent" style="color:#888;font-size:12px;font-weight:500">Click a node to inspect and edit.</div>
       </div>
+    </div>
+    <div style="background:#FAFAFA;border-top:1px solid #E8E8E8;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:#888;font-weight:600">${nodes.length} nodes · ${edges.length} edges · <span style="color:#1a7a3c">MCP Connected</span></span>
+      <div onclick="window._figAddNode('${uid}')" style="padding:4px 12px;background:#9d4edd;color:#fff;border-radius:6px;font-size:10px;font-weight:800;cursor:pointer">+ Add Node</div>
     </div>
   </div>`;
 }
-
+window._figSelect=function(uid,nid){
+  document.querySelectorAll('[id^="'+uid+'_n"]').forEach(el=>{el.style.borderColor='#E0E0E0';el.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)';el.dataset.sel='';});
+  const el=document.getElementById(uid+'_n'+nid);
+  if(el){el.style.borderColor='#9d4edd';el.style.boxShadow='0 4px 16px rgba(157,78,221,0.3)';el.dataset.sel='1';}
+  const p=document.getElementById(uid+'_propContent');
+  if(p&&el){const lb=el.innerText.trim();p.innerHTML=`
+    <div style="margin-bottom:14px"><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">LABEL</div>
+    <input value="${lb}" onchange="document.getElementById('${uid}_n${nid}').innerText=this.value" style="width:100%;padding:6px 10px;border:1px solid #DDD;border-radius:6px;font-size:13px;font-weight:600;color:#333;outline:none"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">X</div><input value="${parseInt(el.style.left)}" type="number" onchange="document.getElementById('${uid}_n${nid}').style.left=this.value+'px'" style="width:100%;padding:5px 8px;border:1px solid #DDD;border-radius:6px;font-size:12px;color:#333;outline:none"/></div>
+      <div><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">Y</div><input value="${parseInt(el.style.top)}" type="number" onchange="document.getElementById('${uid}_n${nid}').style.top=this.value+'px'" style="width:100%;padding:5px 8px;border:1px solid #DDD;border-radius:6px;font-size:12px;color:#333;outline:none"/></div>
+    </div>
+    <div style="margin-bottom:14px"><div style="font-size:10px;color:#888;font-weight:700;margin-bottom:4px">FILL</div>
+    <div style="display:flex;gap:6px">${['#FFF','#F0EAFF','#E8F5E9','#FFF3E0','#FFEBEE','#E3F2FD'].map(c=>`<div onclick="document.getElementById('${uid}_n${nid}').style.background='${c}'" style="width:24px;height:24px;background:${c};border:1.5px solid ${c==='#FFF'?'#CCC':c};border-radius:6px;cursor:pointer"></div>`).join('')}</div></div>
+    <button onclick="document.getElementById('${uid}_n${nid}').remove()" style="width:100%;padding:6px;background:#FFEBEE;color:#c42020;border:1px solid #FFCDD2;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:8px">Delete Node</button>
+  `;}
+};
+window._figSync=function(btn){const o=btn.innerHTML;btn.innerHTML='Syncing...';btn.style.background='#c9a84c';setTimeout(()=>{btn.innerHTML=o;btn.style.background='#2e8a2e';},1500);};
+window._figAddNode=function(uid){
+  const pp=document.getElementById(uid+'_props');if(!pp)return;
+  const cv=pp.parentElement.firstElementChild;if(!cv)return;
+  const nid=Date.now(),d=document.createElement('div');
+  d.id=uid+'_n'+nid;d.innerText='New Node';
+  d.onclick=function(){window._figSelect(uid,nid);};
+  d.style.cssText='position:absolute;left:200px;top:140px;min-width:90px;padding:10px 16px;background:#FFF;border:2px solid #9d4edd;border-radius:8px;cursor:pointer;text-align:center;font-size:12px;font-weight:700;color:#333;box-shadow:0 4px 16px rgba(157,78,221,0.25);z-index:2;animation:fadeIn 0.3s ease';
+  cv.appendChild(d);window._figSelect(uid,nid);
+};
 function rFiles(d){
   return(d.files||[]).map(f=>`
   <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fdf9ff;border:1.5px solid rgba(201,168,76,0.35);border-radius:10px;margin-bottom:7px;cursor:pointer;transition:all .15s" onmouseenter="this.style.borderColor='rgba(201,168,76,0.7)';this.style.background='#fff0e8'" onmouseleave="this.style.borderColor='rgba(201,168,76,0.35)';this.style.background='#fdf9ff'">
