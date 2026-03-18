@@ -114,18 +114,21 @@ const TOOLS={
    STATE
 ══════════════════════════════════════════════════ */
 const S={
-  conn:{},   // id → {status:"off"|"ing"|"on"|"err", apiKey, ms, errMsg, user}
+  conn:{},
   msgs:[],
   busy:false,
   openKey:null,
   history:[]
 };
 Object.keys(TOOLS).forEach(id=>{S.conn[id]={status:"off",apiKey:"",ms:null,errMsg:null,user:null};});
-S.msgs.push({
-  id:0,role:"assistant",
-  text:"Welcome. I am your unified MCP workspace connected to **9 tools**.\n\nConnect your apps using the sidebar — a green dot signals a live connection. Then type anything here:\n\n- I will **auto-detect** which tool fits your prompt\n- I will **show you** which tool was selected and how\n- Or **@mention** a tool directly — like `@slack search for deployment`",
-  tool:null,result:null,loading:false,via:null
-});
+// Load persisted history
+try { const h=JSON.parse(localStorage.getItem('sept_history')||'[]'); if(Array.isArray(h)) S.history=h; } catch(e){}
+function saveHistory(){ try{localStorage.setItem('sept_history',JSON.stringify(S.history))}catch(e){} }
+function newChat(){
+  S.msgs=[{id:0,role:'assistant',text:'Welcome. I am your unified MCP workspace connected to **9 tools**.\n\nConnect your apps using the sidebar \u2014 a green dot signals a live connection. Then type anything here:\n\n- I will **auto-detect** which tool fits your prompt\n- I will **show you** which tool was selected and how\n- Or **@mention** a tool directly \u2014 like `@slack search for deployment`',tool:null,result:null,loading:false,via:null}];
+  render();
+}
+newChat();
 
 /* ══════════════════════════════════════════════════
    ROUTING
@@ -243,6 +246,7 @@ async function doDisconnect(id){
 
 function delHistory(id) {
   S.history = S.history.filter(h => h.id !== id);
+  saveHistory();
   render();
 }
 function viewHistory(id) {
@@ -307,12 +311,13 @@ async function send(){
     }
   }
 
-  // Save to history
+  // Save to history + persist
   if(tool && connected) {
     const hid = Date.now();
     const title = text.length > 40 ? text.slice(0,40)+'...' : text;
-    S.history.unshift({id: hid, title, date: new Date().toLocaleString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})+' Today', toolId: tool.id});
-    if(S.history.length > 20) S.history.pop();
+    S.history.unshift({id: hid, title, date: new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}), toolId: tool.id});
+    if(S.history.length > 30) S.history.pop();
+    saveHistory();
   }
 
   S.busy=false;render();
@@ -372,14 +377,55 @@ function generateFigmaResult(prompt, q) {
   const low = prompt.toLowerCase();
   const hasRobotics = low.includes('robot');
   const hasAI = low.includes('ai') || low.includes('artificial') || low.includes('machine learning') || low.includes('ml');
-  const hasCareer = low.includes('career') || low.includes('roadmap') || low.includes('road map') || low.includes('path');
+  const hasCloud = low.includes('cloud') || low.includes('aws') || low.includes('azure') || low.includes('gcp') || low.includes('devops');
+  const hasWeb = low.includes('web') || low.includes('frontend') || low.includes('fullstack') || low.includes('full stack') || low.includes('full-stack');
+  const hasData = low.includes('data') && (low.includes('scien') || low.includes('engineer') || low.includes('analyst'));
+  const hasBackend = low.includes('backend') || low.includes('back-end') || low.includes('back end') || low.includes('server');
+  const hasCareer = low.includes('career') || low.includes('roadmap') || low.includes('road map') || low.includes('path') || low.includes('plan');
   const hasUI = low.includes('ui') || low.includes('ux') || low.includes('interface') || low.includes('wireframe') || low.includes('mockup');
   const hasFlow = low.includes('flow') || low.includes('diagram') || low.includes('process') || low.includes('workflow');
   const hasAuth = low.includes('auth') || low.includes('login') || low.includes('sign');
 
   let nodes, edges, desc, title;
 
-  if (hasAI && hasRobotics && hasCareer) {
+  if (hasCloud && hasCareer) {
+    title = 'Cloud Developer Career Roadmap';
+    nodes = [
+      {id:1,l:'START\nLinux & Networking',x:20,y:80,w:130,h:55,bg:'#f5f5f5',fg:'#333',border:'#333'},
+      {id:2,l:'Programming\n(Python, Go)',x:180,y:80,w:120,h:55,bg:'#fff',fg:'#333',border:'#333'},
+      {id:3,l:'Cloud Basics\n(AWS/Azure/GCP)',x:330,y:80,w:130,h:55,bg:'#1a3a6b',fg:'#fff'},
+      {id:4,l:'Containers\n(Docker, K8s)',x:490,y:20,w:120,h:50,bg:'#2e6b3a',fg:'#fff'},
+      {id:5,l:'CI/CD\nPipelines',x:490,y:90,w:110,h:50,bg:'#2e6b3a',fg:'#fff'},
+      {id:6,l:'IaC\n(Terraform)',x:490,y:160,w:110,h:50,bg:'#2e6b3a',fg:'#fff'},
+      {id:7,l:'CLOUD\nENGINEER',x:640,y:90,w:120,h:50,bg:'#c9a84c',fg:'#fff'}
+    ];
+    edges = [[1,2],[2,3],[3,4],[3,5],[3,6],[4,7],[5,7],[6,7]];
+    desc = 'Here\'s your **Cloud Developer Career Roadmap**!\n\n**Foundation** Linux administration, Networking (TCP/IP, DNS, HTTP).\n\n**Programming** Python, Go, Bash scripting.\n\n**Cloud Platforms** AWS, Azure, or GCP fundamentals + certifications.\n\n**Containers** Docker, Kubernetes, container orchestration.\n\n**CI/CD** Jenkins, GitHub Actions, GitLab CI, deployment automation.\n\n**Infrastructure as Code** Terraform, CloudFormation, Ansible.\n\n**Cloud Engineer** Production systems, monitoring, security, cost optimization.\n\nClick **Edit in Figma** to customize!';
+  } else if (hasWeb && hasCareer) {
+    title = 'Web Developer Career Roadmap';
+    nodes = [
+      {id:1,l:'HTML/CSS\nBasics',x:20,y:80,w:110,h:55,bg:'#f5f5f5',fg:'#333',border:'#333'},
+      {id:2,l:'JavaScript\nFundamentals',x:160,y:80,w:120,h:55,bg:'#fff',fg:'#333',border:'#333'},
+      {id:3,l:'React /\nNext.js',x:310,y:30,w:110,h:50,bg:'#1a3a6b',fg:'#fff'},
+      {id:4,l:'Node.js /\nAPIs',x:310,y:110,w:110,h:50,bg:'#1a3a6b',fg:'#fff'},
+      {id:5,l:'Databases\n(SQL, NoSQL)',x:310,y:190,w:110,h:50,bg:'#1a3a6b',fg:'#fff'},
+      {id:6,l:'FULLSTACK\nDEVELOPER',x:460,y:110,w:130,h:50,bg:'#2e6b3a',fg:'#fff'}
+    ];
+    edges = [[1,2],[2,3],[2,4],[2,5],[3,6],[4,6],[5,6]];
+    desc = 'Here\'s your **Web Developer Career Roadmap**!\n\n**HTML/CSS** Semantic HTML, Flexbox, Grid, responsive design.\n\n**JavaScript** ES6+, DOM, async/await, Fetch API.\n\n**Frontend** React, Next.js, TypeScript, state management.\n\n**Backend** Node.js, Express, REST APIs, GraphQL.\n\n**Databases** PostgreSQL, MongoDB, Redis.\n\nClick **Edit in Figma** to customize!';
+  } else if (hasData && hasCareer) {
+    title = 'Data Science Career Roadmap';
+    nodes = [
+      {id:1,l:'Math &\nStatistics',x:20,y:80,w:110,h:55,bg:'#f5f5f5',fg:'#333',border:'#333'},
+      {id:2,l:'Python &\nSQL',x:160,y:80,w:110,h:55,bg:'#fff',fg:'#333',border:'#333'},
+      {id:3,l:'Data Analysis\n(Pandas, Viz)',x:300,y:80,w:130,h:55,bg:'#1a3a6b',fg:'#fff'},
+      {id:4,l:'Machine\nLearning',x:460,y:40,w:110,h:50,bg:'#2e6b3a',fg:'#fff'},
+      {id:5,l:'Deep Learning\n& NLP',x:460,y:120,w:120,h:50,bg:'#2e6b3a',fg:'#fff'},
+      {id:6,l:'DATA\nSCIENTIST',x:610,y:80,w:110,h:50,bg:'#c9a84c',fg:'#fff'}
+    ];
+    edges = [[1,2],[2,3],[3,4],[3,5],[4,6],[5,6]];
+    desc = 'Here\'s your **Data Science Career Roadmap**!\n\n**Math** Statistics, Linear Algebra, Probability.\n\n**Programming** Python, SQL, Jupyter notebooks.\n\n**Analysis** Pandas, Matplotlib, Seaborn, EDA.\n\n**ML/DL** Scikit-learn, TensorFlow, PyTorch.\n\nClick **Edit in Figma** to customize!';
+  } else if (hasAI && hasRobotics && hasCareer) {
     title = 'AI & Robotics Career Roadmap';
     nodes = [
       {id:1,l:'START',x:20,y:100,w:100,h:45,bg:'#f5f5f5',fg:'#333',border:'#333'},
@@ -390,7 +436,7 @@ function generateFigmaResult(prompt, q) {
       {id:6,l:'Integration',x:580,y:100,w:100,h:45,bg:'#2e6b3a',fg:'#fff'}
     ];
     edges = [[1,2],[2,3],[3,4],[3,5],[4,6],[5,6]];
-    desc = 'Here\'s your **AI & Robotics Career Roadmap**!\n\n**Foundation** Math, Python/C++, algorithms.\n\n**AI/ML Core** Machine learning, Deep learning, CV, NLP.\n\n**Robotics Core** Electronics, ROS 2, SLAM.\n\n**Integration** Robot Perception, Edge AI on NVIDIA Jetson.\n\nClick **Edit in Figma** to customize!';
+    desc = 'Here\'s your **AI & Robotics Career Roadmap**!\n\n**Foundation** Math, Python/C++, algorithms.\n\n**AI/ML Core** Machine learning, Deep learning, CV, NLP.\n\n**Robotics Core** Electronics, ROS 2, SLAM.\n\nClick **Edit in Figma** to customize!';
   } else if (hasAI && hasCareer) {
     title = 'AI Career Roadmap';
     nodes = [
@@ -403,7 +449,31 @@ function generateFigmaResult(prompt, q) {
       {id:7,l:'AI ENGINEER',x:620,y:90,w:120,h:50,bg:'#2e6b3a',fg:'#fff'}
     ];
     edges = [[1,2],[2,3],[3,4],[3,5],[3,6],[4,7],[5,7],[6,7]];
-    desc = 'Here\'s your **AI Career Roadmap**!\n\n**Foundation (0-6 months)** Math, Statistics, Linear Algebra, Probability.\n\n**Programming (3-9 months)** Python, NumPy, Pandas, data manipulation.\n\n**Machine Learning (6-12 months)** Supervised, Unsupervised learning, Scikit-learn.\n\n**Deep Learning (12-18 months)** Neural Networks, CNNs, RNNs, Transformers.\n\n**NLP / Computer Vision (12-18 months)** LLMs, Object Detection, GANs.\n\n**AI Engineer Role** Production ML, MLOps, deployment at scale.\n\nClick **Edit in Figma** to add timelines and customize!';
+    desc = 'Here\'s your **AI Career Roadmap**!\n\n**Foundation** Math, Statistics, Linear Algebra.\n\n**Programming** Python, NumPy, Pandas.\n\n**ML** Supervised/Unsupervised learning, Scikit-learn.\n\n**Deep Learning** Neural Networks, CNNs, Transformers.\n\n**NLP/CV** LLMs, Object Detection, GANs.\n\nClick **Edit in Figma** to customize!';
+  } else if (hasBackend && hasCareer) {
+    title = 'Backend Developer Career Roadmap';
+    nodes = [
+      {id:1,l:'Programming\nFundamentals',x:20,y:80,w:120,h:55,bg:'#f5f5f5',fg:'#333',border:'#333'},
+      {id:2,l:'Node.js /\nPython / Go',x:170,y:80,w:120,h:55,bg:'#fff',fg:'#333',border:'#333'},
+      {id:3,l:'Databases\n& Caching',x:320,y:80,w:120,h:55,bg:'#1a3a6b',fg:'#fff'},
+      {id:4,l:'APIs &\nMicroservices',x:470,y:80,w:120,h:55,bg:'#2e6b3a',fg:'#fff'},
+      {id:5,l:'BACKEND\nENGINEER',x:620,y:80,w:120,h:50,bg:'#c9a84c',fg:'#fff'}
+    ];
+    edges = [[1,2],[2,3],[3,4],[4,5]];
+    desc = 'Here\'s your **Backend Developer Roadmap**!\n\n**Fundamentals** Data structures, algorithms, OS, networking.\n\n**Languages** Node.js, Python, Go, Java.\n\n**Databases** SQL, MongoDB, Redis, message queues.\n\n**APIs** REST, GraphQL, gRPC, microservices architecture.\n\nClick **Edit in Figma** to customize!';
+  } else if (hasCareer) {
+    // Generic career roadmap based on prompt keywords
+    const topic = prompt.replace(/design|visual|roadmap|road map|career|using|figma|create|for|a|the|with/gi,'').trim() || 'Technology';
+    title = topic + ' Career Roadmap';
+    nodes = [
+      {id:1,l:'START\nFoundation',x:20,y:80,w:110,h:55,bg:'#f5f5f5',fg:'#333',border:'#333'},
+      {id:2,l:'Core\nSkills',x:160,y:80,w:110,h:50,bg:'#fff',fg:'#333',border:'#333'},
+      {id:3,l:'Intermediate\nLevel',x:300,y:80,w:120,h:50,bg:'#1a3a6b',fg:'#fff'},
+      {id:4,l:'Advanced\nSpecialization',x:450,y:80,w:130,h:50,bg:'#2e6b3a',fg:'#fff'},
+      {id:5,l:'CAREER\nGOAL',x:610,y:80,w:110,h:50,bg:'#c9a84c',fg:'#fff'}
+    ];
+    edges = [[1,2],[2,3],[3,4],[4,5]];
+    desc = 'Here\'s your **' + topic + ' Career Roadmap**!\n\nThe roadmap flows from Foundation to Career Goal.\n\nClick **Edit in Figma** to customize with your specific skills and milestones!';
   } else if (hasUI || hasAuth) {
     title = 'UI/UX Design Flow';
     nodes = [
@@ -414,7 +484,7 @@ function generateFigmaResult(prompt, q) {
       {id:5,l:'Profile',x:450,y:80,w:100,h:45,bg:'#fff',fg:'#333',border:'#333'}
     ];
     edges = [[1,2],[2,3],[3,4],[3,5]];
-    desc = 'Here\'s your **UI/UX Design Flow**!\n\n**Landing Page** > **Auth** > **Dashboard** with Settings and Profile branches.\n\nClick **Edit in Figma** to add screens and refine!';
+    desc = 'Here\'s your **UI/UX Design Flow**!\n\nClick **Edit in Figma** to add screens and refine!';
   } else if (hasFlow) {
     title = 'Process Flow Diagram';
     nodes = [
@@ -724,6 +794,10 @@ function buildSidebar(){
           <div style="color:var(--violet-main);font-size:11px;font-weight:800;margin-top:4px;letter-spacing:1px;text-transform:uppercase">MCP Workspace</div>
         </div>
       </div>
+      <button onclick="newChat()" style="width:100%;margin-top:16px;padding:10px;background:var(--violet-main);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(157,78,221,0.3);letter-spacing:.5px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Chat
+      </button>
     </div>
     
     <div style="flex:1;overflow-y:auto;padding:0">
